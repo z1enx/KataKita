@@ -3,7 +3,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
-import java.util.List;
+import java.text.SimpleDateFormat;
 
 public class GamePanel extends JPanel {
     
@@ -12,25 +12,27 @@ public class GamePanel extends JPanel {
     // Komponen UI
     private JLabel timerLabel;
     private JTextField[][] gridFields;
-    
-    // PENGGANTI HASHMAP: Array untuk huruf A-Z (26 huruf)
     private JButton[] letterButtons = new JButton[26]; 
-    // Tombol khusus disimpan terpisah
     private JButton btnEnter;
     private JButton btnBack;
+    
+    // Panel utama game
+    private JPanel gameContentPanel;
     
     // Variabel Game
     private final int MAX_ATTEMPTS = 6;
     private final int WORD_LENGTH = 5;
     private final int GAME_DURATION = 120; 
+    private final long COOLDOWN_DURATION = 5 * 60 * 1000; // 5 menit dalam milliseconds
     
     private String targetWord;
+    private int targetWordId;
     private int currentAttempt;
     private int currentLetterVal; 
     private int remainingTime;
     
     private volatile boolean isGameActive; 
-    private Thread gameThread; 
+    private Thread gameThread;
     
     private StringBuilder currentGuess;
 
@@ -39,7 +41,7 @@ public class GamePanel extends JPanel {
         this.setLayout(new BorderLayout());
         this.setBackground(Theme.BG_COLOR);
         
-        initUI();
+        initGameUI();
         
         this.setFocusable(true);
         this.addKeyListener(new KeyAdapter() {
@@ -61,7 +63,10 @@ public class GamePanel extends JPanel {
         });
     }
 
-    private void initUI() {
+    private void initGameUI() {
+        gameContentPanel = new JPanel(new BorderLayout());
+        gameContentPanel.setBackground(Theme.BG_COLOR);
+        
         // --- 1. HEADER ---
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(Theme.BG_COLOR);
@@ -84,7 +89,7 @@ public class GamePanel extends JPanel {
         headerPanel.add(timerLabel, BorderLayout.CENTER);
         headerPanel.add(dummy, BorderLayout.EAST);
         
-        add(headerPanel, BorderLayout.NORTH);
+        gameContentPanel.add(headerPanel, BorderLayout.NORTH);
 
         // --- 2. GRID KATA ---
         JPanel centerContainer = new JPanel(new FlowLayout(FlowLayout.CENTER));
@@ -111,7 +116,7 @@ public class GamePanel extends JPanel {
             }
         }
         centerContainer.add(gridPanel);
-        add(centerContainer, BorderLayout.CENTER);
+        gameContentPanel.add(centerContainer, BorderLayout.CENTER);
 
         // --- 3. VIRTUAL KEYBOARD ---
         JPanel keyboardPanel = new JPanel();
@@ -129,7 +134,9 @@ public class GamePanel extends JPanel {
         keyboardPanel.add(Box.createVerticalStrut(5));
         keyboardPanel.add(createKeyboardRow(row3));
 
-        add(keyboardPanel, BorderLayout.SOUTH);
+        gameContentPanel.add(keyboardPanel, BorderLayout.SOUTH);
+        
+        add(gameContentPanel, BorderLayout.CENTER);
     }
 
     private JPanel createKeyboardRow(String[] keys) {
@@ -155,15 +162,11 @@ public class GamePanel extends JPanel {
                 this.requestFocusInWindow();
             });
 
-            // --- LOGIKA PENGGANTI MAP (MENGGUNAKAN ARRAY) ---
             if (key.equals("ENTER")) {
                 btnEnter = btn;
             } else if (key.equals("BACK")) {
                 btnBack = btn;
             } else {
-                // Menggunakan ASCII untuk menentukan index
-                // 'A' (65) - 'A' (65) = 0
-                // 'B' (66) - 'A' (65) = 1
                 char c = key.charAt(0);
                 int index = c - 'A'; 
                 if (index >= 0 && index < 26) {
@@ -176,12 +179,49 @@ public class GamePanel extends JPanel {
         return row;
     }
 
-    // --- LOGIKA GAME ---
-
     public void onPanelShown() {
+        // Stop game yang sedang berjalan jika ada
+        stopCurrentGame();
+        
+        // Cek apakah player dalam cooldown
+        DBCon db = new DBCon();
+        long lastGameTime = db.getLastGameTime(mainApp.getCurrentUserId());
+        
+        if (lastGameTime > 0) {
+            long timeSinceLastGame = System.currentTimeMillis() - lastGameTime;
+            
+            if (timeSinceLastGame < COOLDOWN_DURATION) {
+                // Masih dalam cooldown, redirect ke EndGamePanel
+                // Gunakan invokeLater untuk memastikan panel switch terjadi setelah UI siap
+                final long gameTime = lastGameTime;
+                SwingUtilities.invokeLater(() -> {
+                    mainApp.showEndGamePanel(gameTime);
+                });
+                return;
+            }
+        }
+        
+        // Tidak dalam cooldown, mulai game baru
         resetGame();
         startTimerThread(); 
-        this.requestFocusInWindow(); 
+        
+        // Request focus setelah semua setup selesai
+        SwingUtilities.invokeLater(() -> {
+            this.requestFocusInWindow();
+        });
+    }
+    
+    // Method helper untuk stop game yang sedang berjalan
+    private void stopCurrentGame() {
+        isGameActive = false;
+        if (gameThread != null && gameThread.isAlive()) {
+            gameThread.interrupt();
+            try {
+                gameThread.join(500); // Wait max 500ms
+            } catch (InterruptedException e) {
+                // Ignore
+            }
+        }
     }
     
     private void resetGame() {
@@ -192,12 +232,17 @@ public class GamePanel extends JPanel {
         isGameActive = true;
         
         DBCon db = new DBCon();
-        List<String> words = db.getSoal();
+        Map<String, Integer> words = db.getSoal();
+        
         if (words.isEmpty()) {
-             words.add("HEBAT"); 
+            words.put("HEBAT", 1); 
         }
-        targetWord = words.get(new Random().nextInt(words.size())).toUpperCase();
-        System.out.println("Cheat: " + targetWord); 
+        
+        ArrayList<String> wordList = new ArrayList<>(words.keySet());
+        targetWord = wordList.get(new Random().nextInt(wordList.size())).toUpperCase();
+        targetWordId = words.get(targetWord);
+        
+        System.out.println("Debug - Target Word: " + targetWord + " (ID: " + targetWordId + ")");
 
         // Reset Grid
         for (int i = 0; i < MAX_ATTEMPTS; i++) {
@@ -208,7 +253,7 @@ public class GamePanel extends JPanel {
             }
         }
 
-        // Reset Keyboard (Looping Array)
+        // Reset Keyboard
         for (int i = 0; i < 26; i++) {
             if (letterButtons[i] != null) {
                 letterButtons[i].setBackground(Theme.COLOR_ABSENT);
@@ -217,6 +262,9 @@ public class GamePanel extends JPanel {
         }
         if (btnEnter != null) btnEnter.setBackground(Theme.COLOR_ABSENT);
         if (btnBack != null) btnBack.setBackground(Theme.COLOR_ABSENT);
+        
+        timerLabel.setText("02:00");
+        timerLabel.setForeground(Theme.FG_TEXT);
     }
 
     private void handleInput(String key) {
@@ -299,17 +347,14 @@ public class GamePanel extends JPanel {
         }
     }
 
-    // --- LOGIKA BARU UPDATE WARNA KEYBOARD (TANPA MAP) ---
     private void updateKeyColor(String key, Color newColor) {
         JButton btn = null;
 
-        // Cari tombol berdasarkan key
         if (key.equals("ENTER")) {
             btn = btnEnter;
         } else if (key.equals("BACK")) {
             btn = btnBack;
         } else if (key.length() == 1) {
-            // Gunakan ASCII Math untuk akses Array O(1)
             char c = key.charAt(0);
             int index = c - 'A';
             if (index >= 0 && index < 26) {
@@ -320,7 +365,6 @@ public class GamePanel extends JPanel {
         if (btn != null) {
             Color currentColor = btn.getBackground();
             
-            // Prioritas Warna: HIJAU > KUNING > ABU
             if (currentColor.equals(Theme.COLOR_CORRECT)) return; 
             if (currentColor.equals(Theme.COLOR_PRESENT) && !newColor.equals(Theme.COLOR_CORRECT)) return;
             
@@ -333,8 +377,6 @@ public class GamePanel extends JPanel {
             }
         }
     }
-
-    // --- MULTITHREADING (TIMER) ---
 
     private void startTimerThread() {
         if (gameThread != null && gameThread.isAlive()) {
@@ -360,9 +402,10 @@ public class GamePanel extends JPanel {
                 int min = remainingTime / 60;
                 int sec = remainingTime % 60;
 
-                SwingUtilities.invokeLater(() -> 
-                    timerLabel.setText(String.format("%02d:%02d", min, sec))
-                );
+                SwingUtilities.invokeLater(() -> {
+                    timerLabel.setText(String.format("%02d:%02d", min, sec));
+                    timerLabel.setForeground(Theme.FG_TEXT);
+                });
 
                 if (remainingTime <= 0) {
                     SwingUtilities.invokeLater(() -> endGame(false));
@@ -380,20 +423,37 @@ public class GamePanel extends JPanel {
         }
 
         int score = 0;
+        int actualAttempts = currentAttempt + (isWin ? 1 : 0);
+        
         if (isWin) {
             int attemptsLeft = MAX_ATTEMPTS - currentAttempt; 
             score = (remainingTime * 10) + (attemptsLeft * 50);
         }
 
-        // Simpan ke DB
+        // Simpan ke DB dengan timestamp saat ini
         DBCon db = new DBCon();
-        // Gunakan ID Player yang login, dan ID Word yang sebenarnya
-        // db.saveResult(1, 1, (GAME_DURATION - remainingTime), currentAttempt + 1, score); 
-
-        String msg = isWin ? "SELAMAT! Kamu Menang!\nSkor: " + score : "YAHHH KALAH!\nJawaban: " + targetWord;
-        JOptionPane.showMessageDialog(this, msg);
+        int playerId = mainApp.getCurrentUserId();
+        int gameDuration = GAME_DURATION - remainingTime;
+        String status = isWin ? "WIN" : "LOSE";
         
-        mainApp.showPanel("LEADERBOARD"); 
+        boolean saved = db.saveResult(playerId, targetWordId, gameDuration, actualAttempts, score, status);
+        
+        if (!saved) {
+            System.err.println("Gagal menyimpan hasil game ke database!");
+        }
+
+        String msg = isWin ? 
+            "🎉 SELAMAT! Kamu Menang! 🎉\n\nSkor: " + score + "\nWaktu: " + gameDuration + " detik\nPercobaan: " + actualAttempts + " kali" : 
+            "😢 YAHHH KALAH!\n\nJawaban: " + targetWord + "\nWaktu bermain: " + gameDuration + " detik\nPercobaan: " + actualAttempts + " kali";
+        
+        JOptionPane.showMessageDialog(this, 
+            msg + "\n\n⏰ Kamu bisa bermain lagi dalam 5 menit.", 
+            isWin ? "KAMU MENANG!" : "GAME OVER", 
+            isWin ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
+        
+        // Redirect ke CooldownPanel dengan timestamp dari DB (yang baru disimpan)
+        long lastGameTime = db.getLastGameTime(playerId);
+        mainApp.showCooldownPanel(lastGameTime);
     }
 
     private void stopGameAndReturn() {

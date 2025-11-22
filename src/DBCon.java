@@ -11,7 +11,7 @@ public class DBCon {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             String url = dbUrl + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
-            Connection con =  DriverManager.getConnection(url, usn, pass);
+            Connection con = DriverManager.getConnection(url, usn, pass);
             return con;
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -24,14 +24,13 @@ public class DBCon {
 
     public void initialize() {
         String checkWord = "SELECT COUNT(*) FROM word";
-        String insertWord = "INSERT INTO word (word_text) VALUES "+ 
-                            "('MAKAN'), ('MANDI'), ('KABAR'), ('PILOT'), ('TULIS')" +
-                            "('JURUS'), ('TUJUH'), ('HUJAN'), ('SANDI'), ('TIDUR')" +
-                            "('TIDAK'), ('SEMUA'), ('AUDIO'), ('ANTAR'), ('BELUM')" +
-                            " ;";
+        String insertWord = "INSERT INTO word (word_text) VALUES " +
+                            "('MAKAN'), ('MANDI'), ('KABAR'), ('PILOT'), ('TULIS')," +
+                            "('JURUS'), ('TUJUH'), ('HUJAN'), ('SANDI'), ('TIDUR')," +
+                            "('TIDAK'), ('SEMUA'), ('AUDIO'), ('ANTAR'), ('BELUM')";
 
         try (Connection con = getConnection();
-            java.sql.Statement st = con.createStatement()) {
+            Statement st = con.createStatement()) {
 
             try (ResultSet rs = st.executeQuery(checkWord)) {
                 if (rs.next()) {
@@ -51,7 +50,7 @@ public class DBCon {
         if (username == null || username.isBlank() || password == null || password.isBlank()) {
             return false;
         }
-        String sql = "INSERT INTO player(username, password) VALUES(?, ?);";
+        String sql = "INSERT INTO player(username, password) VALUES(?, ?)";
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, username);
@@ -66,7 +65,7 @@ public class DBCon {
 
     public int loginPlayer(String username, String password) {
         if (username == null || username.isBlank() || password == null) return -1;
-        String sql = "SELECT player_id FROM player WHERE username = ? AND password = ? LIMIT 1;";
+        String sql = "SELECT player_id FROM player WHERE username = ? AND password = ? LIMIT 1";
         try (Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, username);
@@ -84,8 +83,8 @@ public class DBCon {
         }
     }
 
-    public boolean saveResult(int playerId, int wordId, int durations, int totalAttempts, int finalScore) {
-        String sql = "INSERT INTO gamesession (player_id, word_id, duration_seconds, total_attempts, final_score) VALUES(?, ?, ?)";
+    public boolean saveResult(int playerId, int wordId, int durations, int totalAttempts, int finalScore, String status) {
+        String sql = "INSERT INTO gamesession (player_id, word_id, start_time, duration_seconds, total_attempts, final_score, status) VALUES(?, ?, NOW(), ?, ?, ?, ?)";
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             
@@ -94,6 +93,7 @@ public class DBCon {
             ps.setInt(3, durations);
             ps.setInt(4, totalAttempts);
             ps.setInt(5, finalScore);
+            ps.setString(6, status);
             
             ps.executeUpdate();
             return true;
@@ -104,31 +104,31 @@ public class DBCon {
         }
     }
 
-    public List<String> getSoal() {
-        List<String> daftarKata = new ArrayList<>();
-        String sql = "SELECT word_text FROM word";
+    public Map<String, Integer> getSoal() {
+        Map<String, Integer> wordMap = new HashMap<>();
+        String sql = "SELECT word_id, word_text FROM word WHERE is_active = 1";
         
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             
             while (rs.next()) {
-                daftarKata.add(rs.getString("word_text"));
+                wordMap.put(rs.getString("word_text"), rs.getInt("word_id"));
             }
             
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return daftarKata;
+        return wordMap;
     }
 
     public List<Object[]> getLeaderboard() {
         List<Object[]> leaderboard = new ArrayList<>();
-        String sql = "SELECT p.username, gs.total_attempts, gs.duration_seconds, gs.final_score, gs.time " +
+        String sql = "SELECT p.username, gs.total_attempts, gs.duration_seconds, gs.final_score, gs.start_time " +
                      "FROM gamesession gs " +
                      "JOIN player p ON gs.player_id = p.player_id " +
                      "ORDER BY gs.final_score DESC, gs.duration_seconds ASC " +
-                     "LIMIT 10;"; 
+                     "LIMIT 10"; 
 
         try (Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(sql);
@@ -142,7 +142,7 @@ public class DBCon {
                     rs.getInt("total_attempts"),
                     rs.getInt("duration_seconds"),
                     rs.getInt("final_score"),
-                    rs.getTimestamp("time")
+                    rs.getTimestamp("start_time")
                 });
                 peringkat++;
             }
@@ -151,5 +151,53 @@ public class DBCon {
             e.printStackTrace();
         }
         return leaderboard;
+    }
+
+    // Method baru: Cek apakah player masih dalam cooldown
+    public long getLastGameTime(int playerId) {
+        String sql = "SELECT MAX(start_time) as last_game FROM gamesession WHERE player_id = ?";
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, playerId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Timestamp lastGame = rs.getTimestamp("last_game");
+                    if (lastGame != null) {
+                        return lastGame.getTime();
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    // Method baru: Ambil hasil game terakhir
+    public Object[] getLastGameResult(int playerId) {
+        String sql = "SELECT w.word_text, gs.duration_seconds, gs.total_attempts, gs.final_score, gs.status, gs.start_time " +
+                     "FROM gamesession gs " +
+                     "JOIN word w ON gs.word_id = w.word_id " +
+                     "WHERE gs.player_id = ? " +
+                     "ORDER BY gs.start_time DESC LIMIT 1";
+        try (Connection con = getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setInt(1, playerId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new Object[]{
+                        rs.getString("word_text"),
+                        rs.getInt("duration_seconds"),
+                        rs.getInt("total_attempts"),
+                        rs.getInt("final_score"),
+                        rs.getString("status"),
+                        rs.getTimestamp("start_time")
+                    };
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

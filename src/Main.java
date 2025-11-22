@@ -1,19 +1,20 @@
 import javax.swing.*;
 import java.awt.*;
 
-public class Main extends JFrame{
-    // public static void main(String[] args) {
-    //     SwingUtilities.invokeLater(() -> {
-    //         new ChronoWordGame().setVisible(true);
-    //     });
-    // }
-
+public class Main extends JFrame {
+    
     private CardLayout cardLayout;
     private JPanel mainPanelContainer;
+    
+    // Panel-panel
     private LoginPanel loginPanel = new LoginPanel(this);
     private MainMenuPanel mainMenuPanel = new MainMenuPanel(this);
     private GamePanel gamePanel = new GamePanel(this);
     private LeaderboardPanel leaderboardPanel = new LeaderboardPanel(this);
+    private EndGamePanel endGamePanel = new EndGamePanel(this);
+    private CooldownPanel cooldownPanel = new CooldownPanel(this);
+    
+    // User session
     private int currentUserId;
     private String currentUsername;
 
@@ -39,6 +40,8 @@ public class Main extends JFrame{
         mainPanelContainer.add(mainMenuPanel, "MAIN_MENU");
         mainPanelContainer.add(gamePanel, "GAME");
         mainPanelContainer.add(leaderboardPanel, "LEADERBOARD");
+        mainPanelContainer.add(endGamePanel, "ENDGAME");
+        mainPanelContainer.add(cooldownPanel, "COOLDOWN");
 
         add(mainPanelContainer);
 
@@ -46,25 +49,32 @@ public class Main extends JFrame{
     }
 
     public void showPanel(String panelName) {
-
         if (panelName.equals("GAME")) {
             if (gamePanel != null) {
                 gamePanel.onPanelShown();
             }
-        } else 
-        if (panelName.equals("LEADERBOARD")) {
+        } else if (panelName.equals("LEADERBOARD")) {
             if (leaderboardPanel != null) {
                 leaderboardPanel.onPanelShown();
             }
         }
         cardLayout.show(mainPanelContainer, panelName);
     }
+    
+    public void showEndGamePanel(long gameEndTime) {
+        cardLayout.show(mainPanelContainer, "ENDGAME");
+        endGamePanel.onPanelShown(gameEndTime);
+    }
+    
+    public void showCooldownPanel(long gameEndTime) {
+        cardLayout.show(mainPanelContainer, "COOLDOWN");
+        cooldownPanel.onPanelShown(gameEndTime);
+    }
 
     public void onLoginSuccess(int userId, String username) {
         this.currentUserId = userId;
         this.currentUsername = username;
         mainMenuPanel.setWelcomeMessage(username);
-        
         
         showPanel("MAIN_MENU");
     }
