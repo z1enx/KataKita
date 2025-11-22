@@ -5,6 +5,8 @@ class Theme {
     // Encapsulation: Fields are private, accessed via methods/constants
     public static final Color BG_COLOR = new Color(18, 18, 19);
     public static final Color FG_TEXT = new Color(255, 255, 255);
+    public static final Color BTN_COLOR = new Color(235, 179, 89);
+    public static final Color BTN_TEXT = new Color(31, 31, 30);
     
     // Warna Status (Wordle Style)
     public static final Color COLOR_CORRECT = new Color(83, 141, 78);   // Hijau

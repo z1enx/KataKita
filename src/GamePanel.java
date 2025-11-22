@@ -1,0 +1,406 @@
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.*;
+import java.util.List;
+
+public class GamePanel extends JPanel {
+    
+    private Main mainApp;
+    
+    // Komponen UI
+    private JLabel timerLabel;
+    private JTextField[][] gridFields;
+    
+    // PENGGANTI HASHMAP: Array untuk huruf A-Z (26 huruf)
+    private JButton[] letterButtons = new JButton[26]; 
+    // Tombol khusus disimpan terpisah
+    private JButton btnEnter;
+    private JButton btnBack;
+    
+    // Variabel Game
+    private final int MAX_ATTEMPTS = 6;
+    private final int WORD_LENGTH = 5;
+    private final int GAME_DURATION = 120; 
+    
+    private String targetWord;
+    private int currentAttempt;
+    private int currentLetterVal; 
+    private int remainingTime;
+    
+    private volatile boolean isGameActive; 
+    private Thread gameThread; 
+    
+    private StringBuilder currentGuess;
+
+    public GamePanel(Main mainApp) {
+        this.mainApp = mainApp;
+        this.setLayout(new BorderLayout());
+        this.setBackground(Theme.BG_COLOR);
+        
+        initUI();
+        
+        this.setFocusable(true);
+        this.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (!isGameActive) return;
+                
+                int code = e.getKeyCode();
+                char keyChar = e.getKeyChar();
+
+                if (code == KeyEvent.VK_ENTER) {
+                    handleInput("ENTER");
+                } else if (code == KeyEvent.VK_BACK_SPACE) {
+                    handleInput("BACK");
+                } else if (Character.isLetter(keyChar)) {
+                    handleInput(String.valueOf(keyChar).toUpperCase());
+                }
+            }
+        });
+    }
+
+    private void initUI() {
+        // --- 1. HEADER ---
+        JPanel headerPanel = new JPanel(new BorderLayout());
+        headerPanel.setBackground(Theme.BG_COLOR);
+        headerPanel.setBorder(new EmptyBorder(15, 20, 15, 20));
+
+        JButton btnBackMenu = new JButton("« MENU");
+        Theme.styleButton(btnBackMenu);
+        btnBackMenu.setFont(new Font("SansSerif", Font.BOLD, 12));
+        btnBackMenu.setPreferredSize(new Dimension(80, 30));
+        btnBackMenu.addActionListener(e -> stopGameAndReturn());
+
+        timerLabel = new JLabel("02:00", SwingConstants.CENTER);
+        timerLabel.setFont(Theme.FONT_TITLE);
+        timerLabel.setForeground(Theme.FG_TEXT);
+
+        JLabel dummy = new JLabel(); 
+        dummy.setPreferredSize(new Dimension(80, 30));
+
+        headerPanel.add(btnBackMenu, BorderLayout.WEST);
+        headerPanel.add(timerLabel, BorderLayout.CENTER);
+        headerPanel.add(dummy, BorderLayout.EAST);
+        
+        add(headerPanel, BorderLayout.NORTH);
+
+        // --- 2. GRID KATA ---
+        JPanel centerContainer = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        centerContainer.setBackground(Theme.BG_COLOR);
+        
+        JPanel gridPanel = new JPanel(new GridLayout(MAX_ATTEMPTS, WORD_LENGTH, 5, 5));
+        gridPanel.setBackground(Theme.BG_COLOR);
+        gridPanel.setBorder(new EmptyBorder(10, 0, 10, 0));
+
+        gridFields = new JTextField[MAX_ATTEMPTS][WORD_LENGTH];
+        for (int i = 0; i < MAX_ATTEMPTS; i++) {
+            for (int j = 0; j < WORD_LENGTH; j++) {
+                JTextField box = new JTextField();
+                box.setPreferredSize(new Dimension(50, 50));
+                box.setEditable(false);
+                box.setFont(Theme.FONT_GRID);
+                box.setHorizontalAlignment(JTextField.CENTER);
+                box.setBackground(Theme.BG_COLOR);
+                box.setForeground(Theme.FG_TEXT);
+                box.setBorder(BorderFactory.createLineBorder(Theme.COLOR_BORDER, 2));
+                
+                gridFields[i][j] = box;
+                gridPanel.add(box);
+            }
+        }
+        centerContainer.add(gridPanel);
+        add(centerContainer, BorderLayout.CENTER);
+
+        // --- 3. VIRTUAL KEYBOARD ---
+        JPanel keyboardPanel = new JPanel();
+        keyboardPanel.setLayout(new BoxLayout(keyboardPanel, BoxLayout.Y_AXIS));
+        keyboardPanel.setBackground(Theme.BG_COLOR);
+        keyboardPanel.setBorder(new EmptyBorder(10, 10, 20, 10));
+
+        String[] row1 = {"Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"};
+        String[] row2 = {"A", "S", "D", "F", "G", "H", "J", "K", "L"};
+        String[] row3 = {"ENTER", "Z", "X", "C", "V", "B", "N", "M", "BACK"};
+
+        keyboardPanel.add(createKeyboardRow(row1));
+        keyboardPanel.add(Box.createVerticalStrut(5));
+        keyboardPanel.add(createKeyboardRow(row2));
+        keyboardPanel.add(Box.createVerticalStrut(5));
+        keyboardPanel.add(createKeyboardRow(row3));
+
+        add(keyboardPanel, BorderLayout.SOUTH);
+    }
+
+    private JPanel createKeyboardRow(String[] keys) {
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.CENTER, 4, 0));
+        row.setBackground(Theme.BG_COLOR);
+        
+        for (String key : keys) {
+            JButton btn = new JButton(key.equals("BACK") ? "⌫" : key);
+            btn.setFont(new Font("SansSerif", Font.BOLD, 14));
+            btn.setForeground(Theme.FG_TEXT);
+            btn.setBackground(Theme.COLOR_ABSENT); 
+            btn.setFocusable(false); 
+            btn.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
+            
+            if (key.equals("ENTER") || key.equals("BACK")) {
+                btn.setPreferredSize(new Dimension(70, 45));
+            } else {
+                btn.setPreferredSize(new Dimension(45, 45));
+            }
+
+            btn.addActionListener(e -> {
+                handleInput(key);
+                this.requestFocusInWindow();
+            });
+
+            // --- LOGIKA PENGGANTI MAP (MENGGUNAKAN ARRAY) ---
+            if (key.equals("ENTER")) {
+                btnEnter = btn;
+            } else if (key.equals("BACK")) {
+                btnBack = btn;
+            } else {
+                // Menggunakan ASCII untuk menentukan index
+                // 'A' (65) - 'A' (65) = 0
+                // 'B' (66) - 'A' (65) = 1
+                char c = key.charAt(0);
+                int index = c - 'A'; 
+                if (index >= 0 && index < 26) {
+                    letterButtons[index] = btn;
+                }
+            }
+            
+            row.add(btn);
+        }
+        return row;
+    }
+
+    // --- LOGIKA GAME ---
+
+    public void onPanelShown() {
+        resetGame();
+        startTimerThread(); 
+        this.requestFocusInWindow(); 
+    }
+    
+    private void resetGame() {
+        currentAttempt = 0;
+        currentLetterVal = 0;
+        currentGuess = new StringBuilder();
+        remainingTime = GAME_DURATION;
+        isGameActive = true;
+        
+        DBCon db = new DBCon();
+        List<String> words = db.getSoal();
+        if (words.isEmpty()) {
+             words.add("HEBAT"); 
+        }
+        targetWord = words.get(new Random().nextInt(words.size())).toUpperCase();
+        System.out.println("Cheat: " + targetWord); 
+
+        // Reset Grid
+        for (int i = 0; i < MAX_ATTEMPTS; i++) {
+            for (int j = 0; j < WORD_LENGTH; j++) {
+                gridFields[i][j].setText("");
+                gridFields[i][j].setBackground(Theme.BG_COLOR);
+                gridFields[i][j].setBorder(BorderFactory.createLineBorder(Theme.COLOR_BORDER, 2));
+            }
+        }
+
+        // Reset Keyboard (Looping Array)
+        for (int i = 0; i < 26; i++) {
+            if (letterButtons[i] != null) {
+                letterButtons[i].setBackground(Theme.COLOR_ABSENT);
+                letterButtons[i].setForeground(Theme.FG_TEXT);
+            }
+        }
+        if (btnEnter != null) btnEnter.setBackground(Theme.COLOR_ABSENT);
+        if (btnBack != null) btnBack.setBackground(Theme.COLOR_ABSENT);
+    }
+
+    private void handleInput(String key) {
+        if (!isGameActive) return;
+
+        if (key.equals("ENTER")) {
+            if (currentGuess.length() == WORD_LENGTH) {
+                checkGuess();
+            } else {
+                JOptionPane.showMessageDialog(this, "Kata harus 5 huruf!", "Info", JOptionPane.WARNING_MESSAGE);
+            }
+        } else if (key.equals("BACK")) {
+            if (currentGuess.length() > 0) {
+                currentGuess.setLength(currentGuess.length() - 1);
+                currentLetterVal--;
+                gridFields[currentAttempt][currentLetterVal].setText("");
+            }
+        } else {
+            if (currentGuess.length() < WORD_LENGTH) {
+                currentGuess.append(key);
+                gridFields[currentAttempt][currentLetterVal].setText(key);
+                currentLetterVal++;
+            }
+        }
+    }
+
+    private void checkGuess() {
+        String guess = currentGuess.toString();
+        
+        Color[] resultColors = new Color[WORD_LENGTH];
+        char[] targetChars = targetWord.toCharArray();
+        char[] guessChars = guess.toCharArray();
+        boolean[] isUsed = new boolean[WORD_LENGTH]; 
+
+        // Cek HIJAU
+        for (int i = 0; i < WORD_LENGTH; i++) {
+            if (guessChars[i] == targetChars[i]) {
+                resultColors[i] = Theme.COLOR_CORRECT;
+                isUsed[i] = true;
+                updateKeyColor(String.valueOf(guessChars[i]), Theme.COLOR_CORRECT);
+            }
+        }
+
+        // Cek KUNING
+        for (int i = 0; i < WORD_LENGTH; i++) {
+            if (resultColors[i] == null) { 
+                boolean found = false;
+                for (int j = 0; j < WORD_LENGTH; j++) {
+                    if (!isUsed[j] && guessChars[i] == targetChars[j]) {
+                        resultColors[i] = Theme.COLOR_PRESENT;
+                        isUsed[j] = true;
+                        found = true;
+                        updateKeyColor(String.valueOf(guessChars[i]), Theme.COLOR_PRESENT);
+                        break;
+                    }
+                }
+                if (!found) {
+                    resultColors[i] = Theme.COLOR_ABSENT; 
+                    updateKeyColor(String.valueOf(guessChars[i]), Theme.COLOR_DEFAULT); 
+                }
+            }
+        }
+
+        // Update Grid UI
+        for (int i = 0; i < WORD_LENGTH; i++) {
+            gridFields[currentAttempt][i].setBackground(resultColors[i]);
+            gridFields[currentAttempt][i].setBorder(BorderFactory.createLineBorder(resultColors[i], 2));
+        }
+
+        if (guess.equals(targetWord)) {
+            endGame(true);
+        } else {
+            currentAttempt++;
+            currentLetterVal = 0;
+            currentGuess.setLength(0); 
+
+            if (currentAttempt >= MAX_ATTEMPTS) {
+                endGame(false);
+            }
+        }
+    }
+
+    // --- LOGIKA BARU UPDATE WARNA KEYBOARD (TANPA MAP) ---
+    private void updateKeyColor(String key, Color newColor) {
+        JButton btn = null;
+
+        // Cari tombol berdasarkan key
+        if (key.equals("ENTER")) {
+            btn = btnEnter;
+        } else if (key.equals("BACK")) {
+            btn = btnBack;
+        } else if (key.length() == 1) {
+            // Gunakan ASCII Math untuk akses Array O(1)
+            char c = key.charAt(0);
+            int index = c - 'A';
+            if (index >= 0 && index < 26) {
+                btn = letterButtons[index];
+            }
+        }
+
+        if (btn != null) {
+            Color currentColor = btn.getBackground();
+            
+            // Prioritas Warna: HIJAU > KUNING > ABU
+            if (currentColor.equals(Theme.COLOR_CORRECT)) return; 
+            if (currentColor.equals(Theme.COLOR_PRESENT) && !newColor.equals(Theme.COLOR_CORRECT)) return;
+            
+            if (newColor.equals(Theme.COLOR_DEFAULT)) {
+                btn.setBackground(new Color(30, 30, 30)); 
+                btn.setForeground(Color.GRAY);
+            } else {
+                btn.setBackground(newColor);
+                btn.setForeground(Color.WHITE);
+            }
+        }
+    }
+
+    // --- MULTITHREADING (TIMER) ---
+
+    private void startTimerThread() {
+        if (gameThread != null && gameThread.isAlive()) {
+            isGameActive = false; 
+            try {
+                gameThread.join(); 
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        
+        isGameActive = true;
+
+        gameThread = new Thread(() -> {
+            while (isGameActive && remainingTime > 0) {
+                try {
+                    Thread.sleep(1000); 
+                } catch (InterruptedException e) {
+                    break;
+                }
+
+                remainingTime--;
+                int min = remainingTime / 60;
+                int sec = remainingTime % 60;
+
+                SwingUtilities.invokeLater(() -> 
+                    timerLabel.setText(String.format("%02d:%02d", min, sec))
+                );
+
+                if (remainingTime <= 0) {
+                    SwingUtilities.invokeLater(() -> endGame(false));
+                }
+            }
+        });
+
+        gameThread.start(); 
+    }
+
+    private void endGame(boolean isWin) {
+        isGameActive = false; 
+        if (gameThread != null) {
+            gameThread.interrupt(); 
+        }
+
+        int score = 0;
+        if (isWin) {
+            int attemptsLeft = MAX_ATTEMPTS - currentAttempt; 
+            score = (remainingTime * 10) + (attemptsLeft * 50);
+        }
+
+        // Simpan ke DB
+        DBCon db = new DBCon();
+        // Gunakan ID Player yang login, dan ID Word yang sebenarnya
+        // db.saveResult(1, 1, (GAME_DURATION - remainingTime), currentAttempt + 1, score); 
+
+        String msg = isWin ? "SELAMAT! Kamu Menang!\nSkor: " + score : "YAHHH KALAH!\nJawaban: " + targetWord;
+        JOptionPane.showMessageDialog(this, msg);
+        
+        mainApp.showPanel("LEADERBOARD"); 
+    }
+
+    private void stopGameAndReturn() {
+        isGameActive = false;
+        if (gameThread != null) {
+            gameThread.interrupt();
+        }
+        mainApp.showPanel("MAIN_MENU");
+    }
+}
