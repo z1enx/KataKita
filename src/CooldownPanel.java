@@ -108,14 +108,11 @@ public class CooldownPanel extends JPanel {
     }
     
     public void onPanelShown(long gameEndTime) {
-        this.lastGameEndTime = gameEndTime;
-        
-        // Load last game result
-        loadLastGameResult();
-        
-        // Start cooldown timer
-        startCooldownTimer();
-    }
+    this.lastGameEndTime = System.currentTimeMillis(); // FIX: start timer now
+    loadLastGameResult();
+    startCooldownTimer();
+}
+
     
     private void loadLastGameResult() {
         DBCon db = new DBCon();
