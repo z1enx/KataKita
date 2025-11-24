@@ -2,6 +2,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.text.SimpleDateFormat;
+import java.sql.Timestamp;
 
 public class CooldownPanel extends JPanel {
     
@@ -114,33 +115,33 @@ public class CooldownPanel extends JPanel {
 }
 
     
-    private void loadLastGameResult() {
-        DBCon db = new DBCon();
-        Object[] lastResult = db.getLastGameResult(mainApp.getCurrentUserId());
+  private void loadLastGameResult() {
+    DBCon db = new DBCon();
+    Object[] lastResult = db.getLastGameResult(mainApp.getCurrentUserId());
+    
+    if (lastResult != null) {
+        String wordText = (String) lastResult[0];
+        int duration = (int) lastResult[1];
+        int attempts = (int) lastResult[2];
+        int score = (int) lastResult[3];
+
+        // Perbaikan bagian Tanggal
+        Timestamp ts = (Timestamp) lastResult[4];
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+        String dateStr = sdf.format(ts);
+
+        String resultHtml = "<html><div style='text-align: center;'>" +
+            "<p style='font-size: 18px; margin: 10px;'><b>Status:</b> " +
+            "<p style='margin: 6px;'><b>Kata:</b> " + wordText + "</p>" +
+            "<p style='margin: 6px;'><b>Percobaan:</b> " + attempts + " kali</p>" +
+            "<p style='margin: 6px;'><b>Durasi:</b> " + duration + " detik</p>" +
+            "<p style='margin: 6px;'><b>Skor:</b> " + score + "</p>" +
+            "<p style='margin: 6px; color: #888;'><i>" + dateStr + "</i></p>" +
+            "</div></html>";
         
-        if (lastResult != null) {
-            String wordText = (String) lastResult[0];
-            int duration = (int) lastResult[1];
-            int attempts = (int) lastResult[2];
-            int score = (int) lastResult[3];
-            String status = (String) lastResult[4];
-            
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-            String dateStr = sdf.format(lastResult[5]);
-            
-            String resultHtml = "<html><div style='text-align: center;'>" +
-                "<p style='font-size: 18px; margin: 10px;'><b>Status:</b> " + 
-                (status.equals("WIN") ? "<span style='color: #538D4E;'>MENANG! 🎉</span>" : "<span style='color: #B59F3B;'>KALAH 😢</span>") + "</p>" +
-                "<p style='margin: 6px;'><b>Kata:</b> " + wordText + "</p>" +
-                "<p style='margin: 6px;'><b>Percobaan:</b> " + attempts + " kali</p>" +
-                "<p style='margin: 6px;'><b>Durasi:</b> " + duration + " detik</p>" +
-                "<p style='margin: 6px;'><b>Skor:</b> " + score + "</p>" +
-                "<p style='margin: 6px; color: #888;'><i>" + dateStr + "</i></p>" +
-                "</div></html>";
-            
-            lastResultLabel.setText(resultHtml);
-        }
+        lastResultLabel.setText(resultHtml);
     }
+}
     
     private void startCooldownTimer() {
         stopCooldown(); // Stop any existing thread

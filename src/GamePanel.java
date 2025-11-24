@@ -440,9 +440,8 @@ public class GamePanel extends JPanel {
         DBCon db = new DBCon();
         int playerId = mainApp.getCurrentUserId();
         int gameDuration = GAME_DURATION - remainingTime;
-        String status = isWin ? "WIN" : "LOSE";
         
-        boolean saved = db.saveResult(playerId, targetWordId, gameDuration, actualAttempts, score, status);
+        boolean saved = db.saveResult(playerId, targetWordId, gameDuration, actualAttempts, score);
         
         if (!saved) {
             System.err.println("Gagal menyimpan hasil game ke database!");

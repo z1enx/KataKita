@@ -84,9 +84,9 @@ public class DBCon {
         }
     }
 
-    public boolean saveResult(int playerId, int wordId, int durations, int totalAttempts, int finalScore, String status) {
+    public boolean saveResult(int playerId, int wordId, int durations, int totalAttempts, int finalScore) {
 
-        String sql = "INSERT INTO gamesession (player_id, word_id, start_time, duration_seconds, total_attempts, final_score, status, end_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO gamesession (player_id, word_id, start_time, duration_seconds, total_attempts, final_score, end_time) VALUES(?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(sql)) {
@@ -105,10 +105,9 @@ public class DBCon {
             ps.setInt(4, durations);
             ps.setInt(5, totalAttempts);
             ps.setInt(6, finalScore);
-            ps.setString(7, status);
             
             // --- BAGIAN PENTING: Konversi long ke Timestamp untuk DATETIME ---
-            ps.setTimestamp(8, new java.sql.Timestamp(endTimeMillis));   // end_time
+            ps.setTimestamp(7, new java.sql.Timestamp(endTimeMillis));   // end_time
 
             ps.executeUpdate();
             return true;
@@ -167,13 +166,27 @@ public class DBCon {
         return false; // Jika terjadi error atau kata tidak ditemukan
     }
 
+    // PERUBAHAN: Leaderboard hanya menampilkan HIGHEST SCORE per pemain
     public List<Object[]> getLeaderboard() {
         List<Object[]> leaderboard = new ArrayList<>();
-        String sql = "SELECT p.username, gs.total_attempts, gs.duration_seconds, gs.final_score, gs.start_time " +
+        
+        // Query untuk mendapatkan score tertinggi per pemain
+        String sql = "SELECT p.username, " +
+                     "       MAX(gs.final_score) as highest_score, " +
+                     "       (SELECT gs2.total_attempts FROM gamesession gs2 " +
+                     "        WHERE gs2.player_id = p.player_id AND gs2.final_score = MAX(gs.final_score) " +
+                     "        ORDER BY gs2.start_time DESC LIMIT 1) as attempts, " +
+                     "       (SELECT gs2.duration_seconds FROM gamesession gs2 " +
+                     "        WHERE gs2.player_id = p.player_id AND gs2.final_score = MAX(gs.final_score) " +
+                     "        ORDER BY gs2.start_time DESC LIMIT 1) as duration, " +
+                     "       (SELECT gs2.start_time FROM gamesession gs2 " +
+                     "        WHERE gs2.player_id = p.player_id AND gs2.final_score = MAX(gs.final_score) " +
+                     "        ORDER BY gs2.start_time DESC LIMIT 1) as play_time " +
                      "FROM gamesession gs " +
                      "JOIN player p ON gs.player_id = p.player_id " +
-                     "ORDER BY gs.final_score DESC, gs.duration_seconds ASC " +
-                     "LIMIT 10"; 
+                     "GROUP BY p.player_id, p.username " +
+                     "ORDER BY highest_score DESC, duration ASC " +
+                     "LIMIT 10";
 
         try (Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(sql);
@@ -184,10 +197,10 @@ public class DBCon {
                 leaderboard.add(new Object[]{
                     peringkat,
                     rs.getString("username"),
-                    rs.getInt("total_attempts"),
-                    rs.getInt("duration_seconds"),
-                    rs.getInt("final_score"),
-                    rs.getTimestamp("start_time")
+                    rs.getInt("attempts"),
+                    rs.getInt("duration"),
+                    rs.getInt("highest_score"),
+                    rs.getTimestamp("play_time")
                 });
                 peringkat++;
             }
@@ -219,9 +232,9 @@ public class DBCon {
     }
 
 
-    // Method baru: Ambil hasil game terakhir
+     // Method: Ambil hasil game terakhir
     public Object[] getLastGameResult(int playerId) {
-        String sql = "SELECT w.word_text, gs.duration_seconds, gs.total_attempts, gs.final_score, gs.status, gs.start_time " +
+        String sql = "SELECT w.word_text, gs.duration_seconds, gs.total_attempts, gs.final_score, gs.start_time " +
                      "FROM gamesession gs " +
                      "JOIN word w ON gs.word_id = w.word_id " +
                      "WHERE gs.player_id = ? " +
@@ -236,7 +249,6 @@ public class DBCon {
                         rs.getInt("duration_seconds"),
                         rs.getInt("total_attempts"),
                         rs.getInt("final_score"),
-                        rs.getString("status"),
                         rs.getTimestamp("start_time")
                     };
                 }
