@@ -86,18 +86,29 @@ public class DBCon {
 
     public boolean saveResult(int playerId, int wordId, int durations, int totalAttempts, int finalScore, String status) {
 
-        String sql = "INSERT INTO gamesession (player_id, word_id, start_time, duration_seconds, total_attempts, final_score, status, end_time) VALUES(?, ?, NOW(), ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO gamesession (player_id, word_id, start_time, duration_seconds, total_attempts, final_score, status, end_time) VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(sql)) {
 
+            // Hitung waktu start dan end di Java
+            long endTimeMillis = System.currentTimeMillis();
+            long startTimeMillis = endTimeMillis - (durations * 1000); // Mundurkan waktu sesuai durasi
+
             ps.setInt(1, playerId);
             ps.setInt(2, wordId);
-            ps.setInt(3, durations);
-            ps.setInt(4, totalAttempts);
-            ps.setInt(5, finalScore);
-            ps.setString(6, status);
-            ps.setLong(7, System.currentTimeMillis());   // <- waktu yang benar
+            
+            // --- BAGIAN PENTING: Konversi long ke Timestamp untuk DATETIME ---
+            ps.setTimestamp(3, new java.sql.Timestamp(startTimeMillis)); // start_time
+            // -----------------------------------------------------------------
+            
+            ps.setInt(4, durations);
+            ps.setInt(5, totalAttempts);
+            ps.setInt(6, finalScore);
+            ps.setString(7, status);
+            
+            // --- BAGIAN PENTING: Konversi long ke Timestamp untuk DATETIME ---
+            ps.setTimestamp(8, new java.sql.Timestamp(endTimeMillis));   // end_time
 
             ps.executeUpdate();
             return true;
@@ -195,7 +206,10 @@ public class DBCon {
             ps.setInt(1, playerId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getLong("last_time");
+                    java.sql.Timestamp ts = rs.getTimestamp("last_time");
+                    if(ts != null) {
+                        return ts.getTime();
+                    }
                 }
             }
         } catch (SQLException e) {
