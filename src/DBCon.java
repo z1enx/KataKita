@@ -85,25 +85,29 @@ public class DBCon {
     }
 
     public boolean saveResult(int playerId, int wordId, int durations, int totalAttempts, int finalScore, String status) {
-        String sql = "INSERT INTO gamesession (player_id, word_id, start_time, duration_seconds, total_attempts, final_score, status) VALUES(?, ?, NOW(), ?, ?, ?, ?)";
+
+        String sql = "INSERT INTO gamesession (player_id, word_id, start_time, duration_seconds, total_attempts, final_score, status, end_time) VALUES(?, ?, NOW(), ?, ?, ?, ?, ?)";
+
         try (Connection con = getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
             ps.setInt(1, playerId);
             ps.setInt(2, wordId);
             ps.setInt(3, durations);
             ps.setInt(4, totalAttempts);
             ps.setInt(5, finalScore);
             ps.setString(6, status);
-            
+            ps.setLong(7, System.currentTimeMillis());   // <- waktu yang benar
+
             ps.executeUpdate();
             return true;
-            
+
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
     }
+
 
     public Map<String, Integer> getSoal() {
         Map<String, Integer> wordMap = new HashMap<>();
@@ -185,16 +189,13 @@ public class DBCon {
 
     // Method baru: Cek apakah player masih dalam cooldown
     public long getLastGameTime(int playerId) {
-        String sql = "SELECT MAX(start_time) as last_game FROM gamesession WHERE player_id = ?";
+    String sql = "SELECT MAX(end_time) as last_time FROM gamesession WHERE player_id = ?";
         try (Connection con = getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+            PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setInt(1, playerId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    Timestamp lastGame = rs.getTimestamp("last_game");
-                    if (lastGame != null) {
-                        return lastGame.getTime();
-                    }
+                    return rs.getLong("last_time");
                 }
             }
         } catch (SQLException e) {
@@ -202,6 +203,7 @@ public class DBCon {
         }
         return 0;
     }
+
 
     // Method baru: Ambil hasil game terakhir
     public Object[] getLastGameResult(int playerId) {

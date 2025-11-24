@@ -6,7 +6,6 @@ public class Main extends JFrame {
     private CardLayout cardLayout;
     private JPanel mainPanelContainer;
     
-    // Panel-panel
     private LoginPanel loginPanel = new LoginPanel(this);
     private MainMenuPanel mainMenuPanel = new MainMenuPanel(this);
     private GamePanel gamePanel = new GamePanel(this);
@@ -14,7 +13,6 @@ public class Main extends JFrame {
     private EndGamePanel endGamePanel = new EndGamePanel(this);
     private CooldownPanel cooldownPanel = new CooldownPanel(this);
     
-    // User session
     private int currentUserId;
     private String currentUsername;
 
