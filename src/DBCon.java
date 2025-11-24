@@ -10,7 +10,8 @@ public class DBCon {
     public Connection getConnection() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            String url = dbUrl + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+            // String url = dbUrl + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+            String url = dbUrl + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Makassar";
             Connection con = DriverManager.getConnection(url, usn, pass);
             return con;
         } catch (ClassNotFoundException e) {
@@ -120,6 +121,35 @@ public class DBCon {
             e.printStackTrace();
         }
         return wordMap;
+    }
+
+    public boolean wordExist(String wordSearch) {
+        // Cek jika input kosong
+        if (wordSearch == null || wordSearch.trim().isEmpty()) {
+            return false;
+        }
+
+        // Menggunakan SELECT COUNT agar lebih ringan daripada mengambil datanya
+        String sql = "SELECT COUNT(*) FROM word WHERE word_text = ?";
+
+        try (Connection con = getConnection();
+            PreparedStatement ps = con.prepareStatement(sql)) {
+
+            // Set parameter ? dengan kata yang dicari (dijadikan uppercase agar konsisten)
+            ps.setString(1, wordSearch.toUpperCase());
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    // Jika hasil hitungan > 0, berarti kata ada
+                    return rs.getInt(1) > 0;
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return false; // Jika terjadi error atau kata tidak ditemukan
     }
 
     public List<Object[]> getLeaderboard() {

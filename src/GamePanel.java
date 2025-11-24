@@ -272,10 +272,16 @@ public class GamePanel extends JPanel {
 
         if (key.equals("ENTER")) {
             if (currentGuess.length() == WORD_LENGTH) {
-                checkGuess();
+                DBCon db = new DBCon();
+                if(db.wordExist(currentGuess.toString())) {
+                    checkGuess();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Kata harus ada di KBBI!", "Info", JOptionPane.WARNING_MESSAGE);
+                }
             } else {
                 JOptionPane.showMessageDialog(this, "Kata harus 5 huruf!", "Info", JOptionPane.WARNING_MESSAGE);
             }
+            
         } else if (key.equals("BACK")) {
             if (currentGuess.length() > 0) {
                 currentGuess.setLength(currentGuess.length() - 1);

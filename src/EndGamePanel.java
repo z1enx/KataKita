@@ -163,6 +163,8 @@ public class EndGamePanel extends JPanel {
                 long elapsed = currentTime - lastGameEndTime;
                 long remaining = COOLDOWN_DURATION - elapsed;
                 
+                if(remaining < 0) remaining = 0;
+
                 if (remaining <= 0) {
                     SwingUtilities.invokeLater(() -> {
                         isRunning = false;

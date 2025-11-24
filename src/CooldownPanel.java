@@ -155,6 +155,8 @@ public class CooldownPanel extends JPanel {
                 long currentTime = System.currentTimeMillis();
                 long elapsed = currentTime - lastGameEndTime;
                 long remaining = COOLDOWN_DURATION - elapsed;
+
+                if (remaining < 0) remaining = 0;
                 
                 if (remaining <= 0) {
                     SwingUtilities.invokeLater(() -> {
