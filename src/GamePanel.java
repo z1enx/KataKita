@@ -1,7 +1,9 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.sound.sampled.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.util.*;
 import java.text.SimpleDateFormat;
 
@@ -35,6 +37,9 @@ public class GamePanel extends JPanel {
     private Thread gameThread;
     
     private StringBuilder currentGuess;
+
+    // Variabel untuk musik
+    private Clip musicClip;
 
     public GamePanel(Main mainApp) {
         this.mainApp = mainApp;
@@ -204,6 +209,7 @@ public class GamePanel extends JPanel {
         // Tidak dalam cooldown, mulai game baru
         resetGame();
         startTimerThread(); 
+        playMusic(); // Mulai musik saat game dimulai
         
         // Request focus setelah semua setup selesai
         SwingUtilities.invokeLater(() -> {
@@ -222,6 +228,7 @@ public class GamePanel extends JPanel {
                 // Ignore
             }
         }
+        stopMusic(); // Stop musik jika ada game yang dihentikan
     }
     
     private void resetGame() {
@@ -422,11 +429,37 @@ public class GamePanel extends JPanel {
         gameThread.start(); 
     }
 
+    private void playMusic() {
+        try {
+            File musicFile = new File("assets/background_music.wav");
+            if (musicFile.exists()) {
+                AudioInputStream audioStream = AudioSystem.getAudioInputStream(musicFile);
+                musicClip = AudioSystem.getClip();
+                musicClip.open(audioStream);
+                musicClip.loop(Clip.LOOP_CONTINUOUSLY);
+                musicClip.start();
+            }
+        } catch (Exception e) {
+            System.err.println("Error playing music: " + e.getMessage());
+        }
+    }
+
+    private void stopMusic() {
+        if (musicClip != null) {
+            if (musicClip.isRunning()) {
+                musicClip.stop();
+            }
+            musicClip.close();
+            musicClip = null;
+        }
+    }
+
     private void endGame(boolean isWin) {
         isGameActive = false; 
         if (gameThread != null) {
             gameThread.interrupt(); 
         }
+        stopMusic(); // Stop musik saat game selesai
 
         int score = 0;
         int actualAttempts = currentAttempt + (isWin ? 1 : 0);
@@ -466,6 +499,7 @@ public class GamePanel extends JPanel {
         if (gameThread != null) {
             gameThread.interrupt();
         }
+        stopMusic(); // Stop musik saat kembali ke menu
         mainApp.showPanel("MAIN_MENU");
     }
 }
