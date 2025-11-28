@@ -1,131 +1,149 @@
 import javax.swing.*;
+import javax.swing.text.JTextComponent;
 import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 
 public class LoginPanel extends JPanel {
+
     private Main mainApp;
-    private JTextField usnField = new JTextField(15);
-    private JPasswordField passField = new JPasswordField(15);
+    private JTextField usnField = new JTextField(18);
+    private JPasswordField passField = new JPasswordField(18);
 
     public LoginPanel(Main mainApp) {
         this.mainApp = mainApp;
-        
+
+        setLayout(new GridBagLayout());
+        setBackground(Theme.BG_COLOR);
+
+        // PANEL UTAMA
+        JPanel container = Theme.createRoundedPanel(25);
+        container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
+        container.setBorder(BorderFactory.createEmptyBorder(40, 55, 45, 55)); // padding diperhalus
+
+        // TITLE
         JLabel title = new JLabel("KataKita");
-        title.setFont(Theme.FONT_TITLE);
-        title.setForeground(Theme.FG_TEXT);
+        title.setFont(Theme.FONT_TITLE.deriveFont(34f));
+        title.setForeground(Color.WHITE);
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
-        title.setHorizontalAlignment(SwingConstants.CENTER);
-        title.setMaximumSize(new Dimension(300, 30));
-        title.setPreferredSize(new Dimension(300, 30));
 
-        JLabel usernameLabel = new JLabel("Username:");
-        usernameLabel.setForeground(Theme.FG_TEXT);
-        usnField.setMaximumSize(new Dimension(220, 28));
-        usnField.setBackground(Theme.BG_COLOR);
-        usnField.setForeground(Theme.FG_TEXT);
-        usnField.setCaretColor(Theme.BTN_COLOR);
-        usnField.setBorder(BorderFactory.createLineBorder(Theme.BTN_COLOR));
+        // FIELD USERNAME
+        Theme.styleInput(usnField);
+        usnField.setMaximumSize(new Dimension(300, 42)); // biar rapi & konsisten
+        addPlaceholder(usnField, "Masukkan Username");
 
-        JPanel username = new JPanel();
-        username.setOpaque(false);
-        username.setLayout(new BoxLayout(username, BoxLayout.X_AXIS));
-        username.add(usernameLabel);
-        username.add(Box.createRigidArea(new Dimension(8,0)));
-        username.add(usnField);
-        username.setMaximumSize(new Dimension(300, 20));
-        username.setPreferredSize(new Dimension(300, 20));
-        
-        JLabel passwordLabel = new JLabel("Password:");
-        passwordLabel.setForeground(Theme.FG_TEXT);
-        passField.setMaximumSize(new Dimension(220, 28));
-        passField.setBackground(Theme.BG_COLOR);
-        passField.setForeground(Theme.FG_TEXT);
-        passField.setCaretColor(Theme.BTN_COLOR);
-        passField.setBorder(BorderFactory.createLineBorder(Theme.BTN_COLOR));
-        JPanel password = new JPanel();
-        password.setOpaque(false);
-        password.setLayout(new BoxLayout(password, BoxLayout.X_AXIS));
-        password.add(passwordLabel);
-        password.add(Box.createRigidArea(new Dimension(8,0)));
-        password.add(passField);
-        password.setMaximumSize(new Dimension(300, 20));
-        password.setPreferredSize(new Dimension(300, 20));
-        
+        // FIELD PASSWORD
+        Theme.styleInput(passField);
+        passField.setMaximumSize(new Dimension(300, 42));
+        passField.setEchoChar((char) 0);
+        addPlaceholder(passField, "Masukkan Password");
+
+        // BUTTON LOGIN
         JButton loginButton = new JButton("Login");
+        Theme.styleButton(loginButton);
         loginButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        loginButton.setMaximumSize(new Dimension(300, 20));
-        loginButton.setPreferredSize(new Dimension(300, 20));
-        loginButton.setBackground(Theme.BTN_COLOR);
-        loginButton.setForeground(Theme.BTN_TEXT);
-        loginButton.setBorderPainted(false);
+        loginButton.setMaximumSize(new Dimension(160, 45));
 
         loginButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                loginButton.setBackground(Theme.BTN_TEXT);
-                loginButton.setForeground(Theme.BTN_COLOR); 
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                loginButton.setBackground(Theme.BTN_COLOR);
-                loginButton.setForeground(Theme.BTN_TEXT);
-            }
+            public void mouseEntered(java.awt.event.MouseEvent evt) { loginButton.setBackground(Theme.BTN_HOVER); }
+            public void mouseExited (java.awt.event.MouseEvent evt) { loginButton.setBackground(Theme.BTN_COLOR); }
         });
+        loginButton.addActionListener(e -> processLogin());
 
+        // BUTTON REGISTER
         JButton registerButton = new JButton("Register");
+        Theme.styleButton(registerButton);
         registerButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-        registerButton.setMaximumSize(new Dimension(300, 20));
-        registerButton.setPreferredSize(new Dimension(300, 20));
-        registerButton.setBackground(Theme.BTN_COLOR);
-        registerButton.setForeground(Theme.BTN_TEXT);
-        registerButton.setBorderPainted(false);
+        registerButton.setMaximumSize(new Dimension(160, 45));
 
         registerButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                registerButton.setBackground(Theme.BTN_TEXT);
-                registerButton.setForeground(Theme.BTN_COLOR);
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                registerButton.setBackground(Theme.BTN_COLOR); 
-                registerButton.setForeground(Theme.BTN_TEXT);
-            }
+            public void mouseEntered(java.awt.event.MouseEvent evt) { registerButton.setBackground(Theme.BTN_HOVER); }
+            public void mouseExited (java.awt.event.MouseEvent evt) { registerButton.setBackground(Theme.BTN_COLOR); }
         });
-
-        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setPreferredSize(new Dimension(320, 240));
-        setMaximumSize(new Dimension(320, 240));
-        setBorder(BorderFactory.createEmptyBorder(16,16,16,16));
-        setOpaque(false);
-
-        add(title);
-        add(Box.createRigidArea(new Dimension(0,12)));
-        add(username);
-        add(Box.createRigidArea(new Dimension(0,8)));
-        add(password);
-        add(Box.createRigidArea(new Dimension(0,12)));
-        add(loginButton);
-        add(Box.createRigidArea(new Dimension(0,8)));
-        add(registerButton);
-
-        loginButton.addActionListener(e -> processLogin());
         registerButton.addActionListener(e -> processRegister());
+
+
+        // === SUSUN TATA LETAK ===
+        container.add(title);
+        container.add(Box.createRigidArea(new Dimension(0, 35)));
+
+        container.add(usnField);
+        container.add(Box.createRigidArea(new Dimension(0, 18)));
+
+        container.add(passField);
+        container.add(Box.createRigidArea(new Dimension(0, 28)));
+
+        container.add(loginButton);
+        container.add(Box.createRigidArea(new Dimension(0, 14)));
+
+        container.add(registerButton);
+
+        add(container, new GridBagConstraints());
     }
 
+
+    // ============================
+    // PLACEHOLDER LOGIC (TIDAK DIUBAH)
+    // ============================
+    private void addPlaceholder(JTextComponent field, String text) {
+        field.setForeground(new Color(170, 170, 170));
+        field.setText(text);
+
+        field.addFocusListener(new FocusAdapter() {
+            boolean isPassword = field instanceof JPasswordField;
+
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (field.getText().equals(text)) {
+                    field.setText("");
+                    field.setForeground(Color.WHITE);
+
+                    if (isPassword) {
+                        ((JPasswordField) field).setEchoChar('•');
+                    }
+                }
+            }
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (field.getText().trim().isEmpty()) {
+                    field.setForeground(new Color(170, 170, 170));
+                    field.setText(text);
+
+                    if (isPassword) {
+                        ((JPasswordField) field).setEchoChar((char) 0);
+                    }
+                }
+            }
+        });
+    }
+
+
+    // ======================================
+    // LOGIN LOGIC
+    // ======================================
     private void processLogin() {
         DBCon db = new DBCon();
         String username = usnField.getText().trim();
         String password = new String(passField.getPassword());
 
-        if (username.isEmpty() || password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Isi username dan password terlebih dahulu.", "Error", JOptionPane.ERROR_MESSAGE);
+        if (username.isEmpty() || username.equals("Masukkan Username")
+                || password.isEmpty() || password.equals("Masukkan Password")) {
+
+            JOptionPane.showMessageDialog(this, "Isi username dan password terlebih dahulu.",
+                    "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
+
         int userId = db.loginPlayer(username, password);
+
         if (userId > 0) {
             resetField();
             JOptionPane.showMessageDialog(this, "Login berhasil.", "Message", JOptionPane.INFORMATION_MESSAGE);
             mainApp.onLoginSuccess(userId, username);
         } else {
-            JOptionPane.showMessageDialog(this, "Username atau password salah.", "Login Gagal", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Username atau password salah.",
+                    "Login Gagal", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -134,16 +152,23 @@ public class LoginPanel extends JPanel {
         String username = usnField.getText().trim();
         String password = new String(passField.getPassword());
 
-        if (username.isEmpty() || password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Isi username dan password untuk registrasi.", "Error", JOptionPane.ERROR_MESSAGE);
+        if (username.isEmpty() || username.equals("Masukkan Username")
+                || password.isEmpty() || password.equals("Masukkan Password")) {
+
+            JOptionPane.showMessageDialog(this, "Isi username dan password untuk registrasi.",
+                    "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
+
         boolean ok = db.registerPlayer(username, password);
+
         if (ok) {
-            JOptionPane.showMessageDialog(this, "Registrasi berhasil! Silakan login.", "Message", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Registrasi berhasil! Silakan login.",
+                    "Message", JOptionPane.INFORMATION_MESSAGE);
             resetField();
         } else {
-            JOptionPane.showMessageDialog(this, "Registrasi gagal. Username mungkin sudah digunakan.", "Registrasi Gagal", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Registrasi gagal. Username sudah digunakan.",
+                    "Registrasi Gagal", JOptionPane.ERROR_MESSAGE);
         }
     }
 

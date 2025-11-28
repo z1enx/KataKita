@@ -5,200 +5,229 @@ import java.text.SimpleDateFormat;
 import java.sql.Timestamp;
 
 public class CooldownPanel extends JPanel {
-    
+
     private Main mainApp;
-    
+
     private JLabel cooldownTimerLabel;
-    private JLabel lastResultLabel;
-    
-    private final long COOLDOWN_DURATION = 5 * 60 * 1000; // 5 menit
-    
+    private JPanel statusPanel;
+
+    private final long COOLDOWN_DURATION = 5 * 60 * 1000;
+
     private long lastGameEndTime;
     private volatile boolean isRunning;
     private Thread cooldownThread;
-    
+
     public CooldownPanel(Main mainApp) {
         this.mainApp = mainApp;
-        this.setLayout(new BorderLayout());
-        this.setBackground(Theme.BG_COLOR);
-        
+
+        setLayout(new GridBagLayout());
+        setBackground(Theme.BG_COLOR);
+
         initUI();
     }
-    
+
     private void initUI() {
-        // Main container dengan GridBagLayout untuk centering
-        JPanel mainContainer = new JPanel(new GridBagLayout());
-        mainContainer.setBackground(Theme.BG_COLOR);
-        
-        // Content panel
-        JPanel contentPanel = new JPanel();
-        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-        contentPanel.setBackground(Theme.COLOR_ABSENT);
-        contentPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(Theme.BTN_COLOR, 3),
-            new EmptyBorder(40, 50, 40, 50)
-        ));
-        
-        // Title
+
+        // ==========================
+        // CARD WRAPPER
+        // ==========================
+        JPanel card = Theme.createRoundedPanel(25);
+        card.setOpaque(false);
+        card.setBorder(new EmptyBorder(40, 60, 40, 60));
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+
+        // ==========================
+        // TITLE
+        // ==========================
         JLabel titleLabel = new JLabel("🎮 HASIL GAME TERAKHIR 🎮");
-        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 26));
+        titleLabel.setFont(new Font("SansSerif", Font.BOLD, 28));
         titleLabel.setForeground(Theme.BTN_COLOR);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        // Last result info
-        lastResultLabel = new JLabel();
-        lastResultLabel.setFont(new Font("SansSerif", Font.PLAIN, 14));
-        lastResultLabel.setForeground(Theme.FG_TEXT);
-        lastResultLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        // Cooldown info
-        JLabel cooldownInfoLabel = new JLabel("⏰ Kamu bisa bermain lagi dalam:");
-        cooldownInfoLabel.setFont(new Font("SansSerif", Font.BOLD, 16));
-        cooldownInfoLabel.setForeground(Theme.FG_TEXT);
-        cooldownInfoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        // Cooldown timer
+
+        // ==========================
+        // STATUS BOX
+        // ==========================
+        statusPanel = Theme.createRoundedPanel(20);
+        statusPanel.setLayout(new BoxLayout(statusPanel, BoxLayout.Y_AXIS));
+        statusPanel.setBorder(new EmptyBorder(22, 28, 22, 28));
+        statusPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        statusPanel.setMaximumSize(new Dimension(420, 270));
+
+        JLabel statusTitle = new JLabel("Status:");
+        statusTitle.setFont(new Font("SansSerif", Font.BOLD, 20));
+        statusTitle.setForeground(Theme.FG_TEXT);
+        statusTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        statusPanel.add(statusTitle);
+        statusPanel.add(Box.createVerticalStrut(14));
+
+        // placeholder – real data will replace these
+        addStatusLine("Kata", "-");
+        addStatusLine("Percobaan", "-");
+        addStatusLine("Durasi", "-");
+        addStatusLine("Skor", "-");
+
+        JLabel timeLabel = new JLabel("-");
+        timeLabel.setName("timeLabel");
+        timeLabel.setFont(new Font("SansSerif", Font.ITALIC, 13));
+        timeLabel.setForeground(Theme.FG_TEXT_SOFT);
+        timeLabel.setAlignmentX(Component.RIGHT_ALIGNMENT);
+
+        statusPanel.add(Box.createVerticalStrut(12));
+        statusPanel.add(timeLabel);
+
+        JLabel cooldownTitle = new JLabel("⏰ Kamu bisa bermain lagi dalam:");
+        cooldownTitle.setFont(new Font("SansSerif", Font.BOLD, 18));
+        cooldownTitle.setForeground(Theme.FG_TEXT_SOFT);
+        cooldownTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         cooldownTimerLabel = new JLabel("05:00");
-        cooldownTimerLabel.setFont(new Font("SansSerif", Font.BOLD, 48));
-        cooldownTimerLabel.setForeground(Theme.COLOR_PRESENT); // Kuning
+        cooldownTimerLabel.setFont(new Font("SansSerif", Font.BOLD, 60));
+        cooldownTimerLabel.setForeground(Theme.COLOR_PRESENT);
         cooldownTimerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        
-        // Back button
-        JButton btnBackToEndGame = new JButton("⬅️ KEMBALI");
-        btnBackToEndGame.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnBackToEndGame.setFont(Theme.FONT_NORMAL);
-        btnBackToEndGame.setBackground(Theme.COLOR_PRESENT);
-        btnBackToEndGame.setForeground(Color.WHITE);
-        btnBackToEndGame.setFocusPainted(false);
-        btnBackToEndGame.setBorderPainted(false);
-        btnBackToEndGame.setPreferredSize(new Dimension(200, 40));
-        btnBackToEndGame.setMaximumSize(new Dimension(200, 40));
-        btnBackToEndGame.addActionListener(e -> {
-            stopCooldown();
-            mainApp.showEndGamePanel(lastGameEndTime);
-        });
-        
-        JButton btnBackToMenu = new JButton("🏠 MENU UTAMA");
-        btnBackToMenu.setAlignmentX(Component.CENTER_ALIGNMENT);
-        btnBackToMenu.setFont(Theme.FONT_NORMAL);
-        btnBackToMenu.setBackground(Theme.BTN_COLOR);
-        btnBackToMenu.setForeground(Theme.BTN_TEXT);
-        btnBackToMenu.setFocusPainted(false);
-        btnBackToMenu.setBorderPainted(false);
-        btnBackToMenu.setPreferredSize(new Dimension(200, 40));
-        btnBackToMenu.setMaximumSize(new Dimension(200, 40));
-        btnBackToMenu.addActionListener(e -> {
+
+        // ==========================
+        // BUTTON
+        // ==========================
+        JButton btnBack = new JButton("MENU UTAMA");
+        Theme.styleButton(btnBack);
+        btnBack.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        btnBack.addActionListener(e -> {
             stopCooldown();
             mainApp.showPanel("MAIN_MENU");
         });
-        
-        // Add components
-        contentPanel.add(titleLabel);
-        contentPanel.add(Box.createRigidArea(new Dimension(0, 25)));
-        contentPanel.add(lastResultLabel);
-        contentPanel.add(Box.createRigidArea(new Dimension(0, 30)));
-        contentPanel.add(cooldownInfoLabel);
-        contentPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        contentPanel.add(cooldownTimerLabel);
-        contentPanel.add(Box.createRigidArea(new Dimension(0, 30)));
-        contentPanel.add(btnBackToMenu);
-        
-        mainContainer.add(contentPanel);
-        
-        add(mainContainer, BorderLayout.CENTER);
+
+        // ==========================
+        // ADD TO CARD
+        // ==========================
+        card.add(titleLabel);
+        card.add(Box.createVerticalStrut(30));
+        card.add(statusPanel);
+        card.add(Box.createVerticalStrut(38));
+        card.add(cooldownTitle);
+        card.add(Box.createVerticalStrut(12));
+        card.add(cooldownTimerLabel);
+        card.add(Box.createVerticalStrut(45));
+        card.add(btnBack);
+
+        add(card);
     }
-    
+
+    // ==================================================================
+    // UTIL — Membuat satu baris status (Label kiri & nilai kanan)
+    // ==================================================================
+    private void addStatusLine(String label, String value) {
+        JPanel row = new JPanel(new BorderLayout());
+        row.setOpaque(false);
+
+        JLabel lblLeft = new JLabel(label + ":");
+        lblLeft.setFont(new Font("SansSerif", Font.BOLD, 16));
+        lblLeft.setForeground(Theme.FG_TEXT);
+
+        JLabel lblRight = new JLabel(value);
+        lblRight.setFont(new Font("SansSerif", Font.PLAIN, 16));
+        lblRight.setForeground(Theme.FG_TEXT);
+        lblRight.setName(label);
+
+        row.add(lblLeft, BorderLayout.WEST);
+        row.add(lblRight, BorderLayout.EAST);
+
+        statusPanel.add(row);
+        statusPanel.add(Box.createVerticalStrut(10));
+    }
+
+    // ==================================================================
+    // LOAD DATA TERAKHIR
+    // ==================================================================
     public void onPanelShown(long gameEndTime) {
-        // this.lastGameEndTime = System.currentTimeMillis(); // FIX: start timer now
-        this.lastGameEndTime = gameEndTime;
-        if (this.lastGameEndTime <= 0) {
-            this.lastGameEndTime = System.currentTimeMillis();
-        }
+        this.lastGameEndTime = gameEndTime == 0 ? System.currentTimeMillis() : gameEndTime;
         loadLastGameResult();
         startCooldownTimer();
     }
 
-    
-  private void loadLastGameResult() {
-    DBCon db = new DBCon();
-    Object[] lastResult = db.getLastGameResult(mainApp.getCurrentUserId());
-    
-    if (lastResult != null) {
-        String wordText = (String) lastResult[0];
-        int duration = (int) lastResult[1];
-        int attempts = (int) lastResult[2];
-        int score = (int) lastResult[3];
+    private void loadLastGameResult() {
 
-        // Perbaikan bagian Tanggal
-        Timestamp ts = (Timestamp) lastResult[4];
+        DBCon db = new DBCon();
+        Object[] last = db.getLastGameResult(mainApp.getCurrentUserId());
+        if (last == null) return;
+
+        String kata = (String) last[0];
+        int durasi = (int) last[1];
+        int perc = (int) last[2];
+        int skor = (int) last[3];
+        Timestamp ts = (Timestamp) last[4];
+
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
         String dateStr = sdf.format(ts);
 
-        String resultHtml = "<html><div style='text-align: center;'>" +
-            "<p style='font-size: 18px; margin: 10px;'><b>Status:</b> " +
-            "<p style='margin: 6px;'><b>Kata:</b> " + wordText + "</p>" +
-            "<p style='margin: 6px;'><b>Percobaan:</b> " + attempts + " kali</p>" +
-            "<p style='margin: 6px;'><b>Durasi:</b> " + duration + " detik</p>" +
-            "<p style='margin: 6px;'><b>Skor:</b> " + score + "</p>" +
-            "<p style='margin: 6px; color: #888;'><i>" + dateStr + "</i></p>" +
-            "</div></html>";
-        
-        lastResultLabel.setText(resultHtml);
+        setStatusValue("Kata", kata);
+        setStatusValue("Percobaan", perc + "");
+        setStatusValue("Durasi", durasi + " detik");
+        setStatusValue("Skor", skor + "");
+
+        for (Component c : statusPanel.getComponents()) {
+            if (c instanceof JLabel && "timeLabel".equals(c.getName())) {
+                ((JLabel) c).setText(dateStr);
+            }
+        }
     }
-}
-    
+
+    private void setStatusValue(String field, String value) {
+        for (Component c : statusPanel.getComponents()) {
+            if (c instanceof JPanel) {
+                JPanel row = (JPanel) c;
+                Component[] children = row.getComponents();
+                if (children.length == 2 && children[1] instanceof JLabel) {
+                    JLabel right = (JLabel) children[1];
+                    if (field.equals(right.getName())) {
+                        right.setText(value);
+                    }
+                }
+            }
+        }
+    }
+
+    // ==================================================================
+    // COOLDOWN TIMER
+    // ==================================================================
     private void startCooldownTimer() {
-        stopCooldown(); // Stop any existing thread
-        
+        stopCooldown();
         isRunning = true;
-        
+
         cooldownThread = new Thread(() -> {
             while (isRunning) {
-                long currentTime = System.currentTimeMillis();
-                long elapsed = currentTime - lastGameEndTime;
-                long remaining = COOLDOWN_DURATION - elapsed;
 
+                long elapsed = System.currentTimeMillis() - lastGameEndTime;
+                long remaining = COOLDOWN_DURATION - elapsed;
                 if (remaining < 0) remaining = 0;
-                
+
+                int min = (int)(remaining / 60000);
+                int sec = (int)((remaining % 60000) / 1000);
+
+                SwingUtilities.invokeLater(() ->
+                        cooldownTimerLabel.setText(String.format("%02d:%02d", min, sec)));
+
                 if (remaining <= 0) {
                     SwingUtilities.invokeLater(() -> {
-                        isRunning = false;
-                        JOptionPane.showMessageDialog(this, 
-                            "⏰ Cooldown selesai! Kamu bisa bermain lagi.", 
-                            "Info", 
-                            JOptionPane.INFORMATION_MESSAGE);
+                        JOptionPane.showMessageDialog(this,
+                                "⏰ Cooldown selesai! Kamu bisa bermain lagi.",
+                                "Info", JOptionPane.INFORMATION_MESSAGE);
                         mainApp.showPanel("GAME");
                     });
                     break;
                 }
-                
-                int minutes = (int) (remaining / 60000);
-                int seconds = (int) ((remaining % 60000) / 1000);
-                
-                SwingUtilities.invokeLater(() -> {
-                    cooldownTimerLabel.setText(String.format("%02d:%02d", minutes, seconds));
-                });
-                
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    break;
-                }
+
+                try { Thread.sleep(1000); }
+                catch (InterruptedException e) { break; }
             }
         });
-        
+
         cooldownThread.start();
     }
-    
+
     public void stopCooldown() {
         isRunning = false;
-        if (cooldownThread != null && cooldownThread.isAlive()) {
-            cooldownThread.interrupt();
-            try {
-                cooldownThread.join(100); // Wait max 100ms
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        if (cooldownThread != null) cooldownThread.interrupt();
     }
 }
