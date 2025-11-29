@@ -27,7 +27,7 @@ public class CooldownPanel extends JPanel {
     }
 
     private void initUI() {
-
+        DBCon db = new DBCon();
         // ==========================
         // CARD WRAPPER
         // ==========================
@@ -53,15 +53,16 @@ public class CooldownPanel extends JPanel {
         statusPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
         statusPanel.setMaximumSize(new Dimension(420, 270));
 
-        JLabel statusTitle = new JLabel("Status:");
-        statusTitle.setFont(new Font("SansSerif", Font.BOLD, 20));
-        statusTitle.setForeground(Theme.FG_TEXT);
-        statusTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        // JLabel statusTitle = new JLabel("Status:");
+        // statusTitle.setFont(new Font("SansSerif", Font.BOLD, 20));
+        // statusTitle.setForeground(Theme.FG_TEXT);
+        // statusTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        statusPanel.add(statusTitle);
-        statusPanel.add(Box.createVerticalStrut(14));
+        // statusPanel.add(statusTitle);
+        // statusPanel.add(Box.createVerticalStrut(14));
 
         // placeholder – real data will replace these
+        addStatusLine("Status", "-");
         addStatusLine("Kata", "-");
         addStatusLine("Percobaan", "-");
         addStatusLine("Durasi", "-");
@@ -161,6 +162,8 @@ public class CooldownPanel extends JPanel {
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
         String dateStr = sdf.format(ts);
 
+        if(skor == 0) setStatusValue("Status", "Kalah");
+        else setStatusValue("Status", "Menang");
         setStatusValue("Kata", kata);
         setStatusValue("Percobaan", perc + "");
         setStatusValue("Durasi", durasi + " detik");
