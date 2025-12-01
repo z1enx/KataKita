@@ -431,7 +431,7 @@ public class GamePanel extends JPanel {
 
     private void playMusic() {
         try {
-            File musicFile = new File("assets/background_music.wav");
+            File musicFile = new File("assets/backburner.wav");
             if (musicFile.exists()) {
                 AudioInputStream audioStream = AudioSystem.getAudioInputStream(musicFile);
                 musicClip = AudioSystem.getClip();
