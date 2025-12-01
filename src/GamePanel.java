@@ -370,7 +370,7 @@ public class GamePanel extends JPanel {
         } else if (key.length() == 1) {
             char c = key.charAt(0);
             int index = c - 'A';
-            if (index >= 0 && index < 26) {
+            if (index >= 0 && index < 26) {                    
                 btn = letterButtons[index];
             }
         }
@@ -469,16 +469,8 @@ public class GamePanel extends JPanel {
             score = (remainingTime * 10) + (attemptsLeft * 50);
         }
 
-        // Simpan ke DB dengan timestamp saat ini
-        DBCon db = new DBCon();
         int playerId = mainApp.getCurrentUserId();
         int gameDuration = GAME_DURATION - remainingTime;
-        
-        boolean saved = db.saveResult(playerId, targetWordId, gameDuration, actualAttempts, score);
-        
-        if (!saved) {
-            System.err.println("Gagal menyimpan hasil game ke database!");
-        }
 
         String msg = isWin ? 
             "🎉 SELAMAT! Kamu Menang! 🎉\n\nSkor: " + score + "\nWaktu: " + gameDuration + " detik\nPercobaan: " + actualAttempts + " kali" : 
@@ -488,6 +480,14 @@ public class GamePanel extends JPanel {
             msg + "\n\n⏰ Kamu bisa bermain lagi dalam 5 menit.", 
             isWin ? "KAMU MENANG!" : "GAME OVER", 
             isWin ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
+
+        DBCon db = new DBCon();
+        
+        boolean saved = db.saveResult(playerId, targetWordId, gameDuration, actualAttempts, score);
+        
+        if (!saved) {
+            System.err.println("Gagal menyimpan hasil game ke database!");
+        }
         
         // Redirect ke CooldownPanel dengan timestamp dari DB (yang baru disimpan)
         long lastGameTime = db.getLastGameTime(playerId);
