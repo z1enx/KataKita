@@ -16,29 +16,24 @@ public class LoginPanel extends JPanel {
         setLayout(new GridBagLayout());
         setBackground(Theme.BG_COLOR);
 
-        // PANEL UTAMA
         JPanel container = Theme.createRoundedPanel(25);
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
-        container.setBorder(BorderFactory.createEmptyBorder(40, 55, 45, 55)); // padding diperhalus
+        container.setBorder(BorderFactory.createEmptyBorder(40, 55, 45, 55)); 
 
-        // TITLE
         JLabel title = new JLabel("KataKita");
         title.setFont(Theme.FONT_TITLE.deriveFont(34f));
         title.setForeground(Color.WHITE);
         title.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // FIELD USERNAME
         Theme.styleInput(usnField);
-        usnField.setMaximumSize(new Dimension(300, 42)); // biar rapi & konsisten
+        usnField.setMaximumSize(new Dimension(300, 42)); 
         addPlaceholder(usnField, "Masukkan Username");
 
-        // FIELD PASSWORD
         Theme.styleInput(passField);
         passField.setMaximumSize(new Dimension(300, 42));
         passField.setEchoChar((char) 0);
         addPlaceholder(passField, "Masukkan Password");
 
-        // BUTTON LOGIN
         JButton loginButton = new JButton("Login");
         Theme.styleButton(loginButton);
         loginButton.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -50,7 +45,6 @@ public class LoginPanel extends JPanel {
         });
         loginButton.addActionListener(e -> processLogin());
 
-        // BUTTON REGISTER
         JButton registerButton = new JButton("Register");
         Theme.styleButton(registerButton);
         registerButton.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -63,7 +57,6 @@ public class LoginPanel extends JPanel {
         registerButton.addActionListener(e -> processRegister());
 
 
-        // === SUSUN TATA LETAK ===
         container.add(title);
         container.add(Box.createRigidArea(new Dimension(0, 35)));
 
@@ -82,9 +75,6 @@ public class LoginPanel extends JPanel {
     }
 
 
-    // ============================
-    // PLACEHOLDER LOGIC (TIDAK DIUBAH)
-    // ============================
     private void addPlaceholder(JTextComponent field, String text) {
         field.setForeground(new Color(170, 170, 170));
         field.setText(text);
@@ -118,10 +108,6 @@ public class LoginPanel extends JPanel {
         });
     }
 
-
-    // ======================================
-    // LOGIN LOGIC
-    // ======================================
     private void processLogin() {
         DBCon db = new DBCon();
         String username = usnField.getText().trim();

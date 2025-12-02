@@ -10,7 +10,6 @@ public class DBCon {
     public Connection getConnection() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            // String url = dbUrl + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
             String url = dbUrl + "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Makassar";
             Connection con = DriverManager.getConnection(url, usn, pass);
             return con;
@@ -91,23 +90,19 @@ public class DBCon {
         try (Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(sql)) {
 
-            // Hitung waktu start dan end di Java
             long endTimeMillis = System.currentTimeMillis();
-            long startTimeMillis = endTimeMillis - (durations * 1000); // Mundurkan waktu sesuai durasi
+            long startTimeMillis = endTimeMillis - (durations * 1000); 
 
             ps.setInt(1, playerId);
             ps.setInt(2, wordId);
             
-            // --- BAGIAN PENTING: Konversi long ke Timestamp untuk DATETIME ---
-            ps.setTimestamp(3, new java.sql.Timestamp(startTimeMillis)); // start_time
-            // -----------------------------------------------------------------
+            ps.setTimestamp(3, new java.sql.Timestamp(startTimeMillis)); 
             
             ps.setInt(4, durations);
             ps.setInt(5, totalAttempts);
             ps.setInt(6, finalScore);
             
-            // --- BAGIAN PENTING: Konversi long ke Timestamp untuk DATETIME ---
-            ps.setTimestamp(7, new java.sql.Timestamp(endTimeMillis));   // end_time
+            ps.setTimestamp(7, new java.sql.Timestamp(endTimeMillis));
 
             ps.executeUpdate();
             return true;
@@ -138,23 +133,19 @@ public class DBCon {
     }
 
     public boolean wordExist(String wordSearch) {
-        // Cek jika input kosong
         if (wordSearch == null || wordSearch.trim().isEmpty()) {
             return false;
         }
 
-        // Menggunakan SELECT COUNT agar lebih ringan daripada mengambil datanya
         String sql = "SELECT COUNT(*) FROM word WHERE word_text = ?";
 
         try (Connection con = getConnection();
             PreparedStatement ps = con.prepareStatement(sql)) {
 
-            // Set parameter ? dengan kata yang dicari (dijadikan uppercase agar konsisten)
             ps.setString(1, wordSearch.toUpperCase());
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    // Jika hasil hitungan > 0, berarti kata ada
                     return rs.getInt(1) > 0;
                 }
             }
@@ -163,14 +154,12 @@ public class DBCon {
             e.printStackTrace();
         }
 
-        return false; // Jika terjadi error atau kata tidak ditemukan
+        return false; 
     }
 
-    // PERUBAHAN: Leaderboard hanya menampilkan HIGHEST SCORE per pemain
     public List<Object[]> getLeaderboard() {
         List<Object[]> leaderboard = new ArrayList<>();
         
-        // Query untuk mendapatkan score tertinggi per pemain
         String sql = "SELECT p.username, " +
                      "       MAX(gs.final_score) as highest_score, " +
                      "       (SELECT gs2.total_attempts FROM gamesession gs2 " +
@@ -211,7 +200,6 @@ public class DBCon {
         return leaderboard;
     }
 
-    // Method baru: Cek apakah player masih dalam cooldown
     public long getLastGameTime(int playerId) {
     String sql = "SELECT MAX(end_time) as last_time FROM gamesession WHERE player_id = ?";
         try (Connection con = getConnection();
@@ -232,7 +220,6 @@ public class DBCon {
     }
 
 
-     // Method: Ambil hasil game terakhir
     public Object[] getLastGameResult(int playerId) {
         String sql = "SELECT w.word_text, gs.duration_seconds, gs.total_attempts, gs.final_score, gs.start_time " +
                      "FROM gamesession gs " +

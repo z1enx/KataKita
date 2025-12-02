@@ -12,19 +12,16 @@ public class LeaderboardPanel extends JPanel {
     public LeaderboardPanel(Main mainApp) {
         this.mainApp = mainApp;
 
-        // 1. Setup Panel Utama
         this.setBackground(Theme.BG_COLOR);
         this.setLayout(new BorderLayout(0, 20));
         this.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        // 2. Title Label
         JLabel titleLabel = new JLabel("🏆 PERINGKAT TERTINGGI 🏆");
         titleLabel.setFont(Theme.FONT_TITLE);
         titleLabel.setForeground(Theme.BTN_COLOR);
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         this.add(titleLabel, BorderLayout.NORTH);
 
-        // 3. Setup Kolom Tabel
         String[] columnNames = {"Rank", "Username", "Percobaan", "Durasi (dtk)", "Skor Akhir", "Waktu Main"};
         
         modelTable = new DefaultTableModel(columnNames, 0) {
@@ -34,7 +31,6 @@ public class LeaderboardPanel extends JPanel {
             }
         };
 
-        // 4. Setup JTable
         leaderboardTable = new JTable(modelTable);
         leaderboardTable.setRowHeight(35);
         leaderboardTable.setFont(Theme.FONT_NORMAL);
@@ -44,14 +40,12 @@ public class LeaderboardPanel extends JPanel {
         leaderboardTable.setSelectionBackground(Theme.COLOR_PRESENT);
         leaderboardTable.setSelectionForeground(Theme.FG_TEXT);
 
-        // 5. Styling Header Tabel
         JTableHeader header = leaderboardTable.getTableHeader();
         header.setFont(new Font("SansSerif", Font.BOLD, 14));
         header.setBackground(Theme.BTN_COLOR);
         header.setForeground(Theme.BTN_TEXT);
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 2, 0, Theme.COLOR_BORDER));
 
-        // 6. Custom Renderer
         DefaultTableCellRenderer darkRenderer = new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, 
@@ -70,14 +64,14 @@ public class LeaderboardPanel extends JPanel {
                     try {
                         int rank = Integer.parseInt(value.toString());
                         if (rank == 1) {
-                            c.setForeground(new Color(255, 215, 0)); // Gold
+                            c.setForeground(new Color(255, 215, 0)); 
                         } else if (rank == 2) {
-                            c.setForeground(new Color(192, 192, 192)); // Silver
+                            c.setForeground(new Color(192, 192, 192));
                         } else if (rank == 3) {
-                            c.setForeground(new Color(205, 127, 50)); // Bronze
+                            c.setForeground(new Color(205, 127, 50)); 
                         }
                     } catch (NumberFormatException ex) {
-                        // Ignore if not a number
+                        
                     }
                 }
                 
@@ -85,26 +79,22 @@ public class LeaderboardPanel extends JPanel {
             }
         };
 
-        // Terapkan renderer ke semua kolom
         for (int i = 0; i < leaderboardTable.getColumnCount(); i++) {
             leaderboardTable.getColumnModel().getColumn(i).setCellRenderer(darkRenderer);
         }
         
-        // Atur lebar kolom
-        leaderboardTable.getColumnModel().getColumn(0).setPreferredWidth(50);  // Rank
-        leaderboardTable.getColumnModel().getColumn(1).setPreferredWidth(150); // Username
-        leaderboardTable.getColumnModel().getColumn(2).setPreferredWidth(100); // Percobaan
-        leaderboardTable.getColumnModel().getColumn(3).setPreferredWidth(100); // Durasi
-        leaderboardTable.getColumnModel().getColumn(4).setPreferredWidth(100); // Skor
-        leaderboardTable.getColumnModel().getColumn(5).setPreferredWidth(180); // Waktu
+        leaderboardTable.getColumnModel().getColumn(0).setPreferredWidth(50);  
+        leaderboardTable.getColumnModel().getColumn(1).setPreferredWidth(150); 
+        leaderboardTable.getColumnModel().getColumn(2).setPreferredWidth(100); 
+        leaderboardTable.getColumnModel().getColumn(3).setPreferredWidth(100); 
+        leaderboardTable.getColumnModel().getColumn(4).setPreferredWidth(100); 
+        leaderboardTable.getColumnModel().getColumn(5).setPreferredWidth(180); 
 
-        // 7. ScrollPane
         JScrollPane scrollPane = new JScrollPane(leaderboardTable);
         scrollPane.setBorder(BorderFactory.createLineBorder(Theme.COLOR_BORDER));
         scrollPane.getViewport().setBackground(Theme.BG_COLOR);
         this.add(scrollPane, BorderLayout.CENTER);
 
-        // 8. Tombol Kembali
         JPanel southPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         southPanel.setBackground(Theme.BG_COLOR);
 
@@ -140,8 +130,6 @@ public class LeaderboardPanel extends JPanel {
                         modelTable.addRow(emptyRow);
                     } else {
                         for (Object[] row : leaderboardData) {
-                            // row[0] = rank, row[1] = username, row[2] = attempts, 
-                            // row[3] = duration, row[4] = score, row[5] = timestamp
                             
                             String formattedDate = "";
                             if (row[5] != null) {

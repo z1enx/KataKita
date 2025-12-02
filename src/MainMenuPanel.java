@@ -13,7 +13,6 @@ public class MainMenuPanel extends JPanel {
         setOpaque(false);
         setBorder(BorderFactory.createEmptyBorder(80, 50, 50, 50));
 
-        // ====== WELCOME TEXT ======
         welcomeLabel.setFont(Theme.FONT_TITLE);
         welcomeLabel.setForeground(Theme.BTN_COLOR);
         welcomeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -21,7 +20,6 @@ public class MainMenuPanel extends JPanel {
         welcomeLabel.setPreferredSize(new Dimension(500, 40));
         welcomeLabel.setMaximumSize(new Dimension(500, 40));
 
-        // ====== BUTTON STYLE MAKER (AGAR RAPI DALAM 1 GAYA) ======
         JButton startGameButton = createStyledButton("Mulai Main");
         JButton leaderboardButton = createStyledButton("Lihat Leaderboard");
         JButton logoutButton = createStyledButton("Logout");
@@ -30,7 +28,6 @@ public class MainMenuPanel extends JPanel {
         startGameButton.addActionListener(e -> mainApp.showPanel("GAME"));
         leaderboardButton.addActionListener(e -> mainApp.showPanel("LEADERBOARD"));
 
-        // ====== LAYOUT ======
         add(welcomeLabel);
         add(Box.createRigidArea(new Dimension(0, 30)));
         add(startGameButton);
@@ -40,7 +37,6 @@ public class MainMenuPanel extends JPanel {
         add(logoutButton);
     }
 
-    // ====== STYLE TEMPLATE BIAR KONSISTEN ======
     private JButton createStyledButton(String text) {
         JButton btn = new JButton(text);
         btn.setAlignmentX(Component.CENTER_ALIGNMENT);

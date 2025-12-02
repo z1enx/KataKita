@@ -25,38 +25,23 @@ public class CooldownPanel extends JPanel {
 
     private void initUI() {
 
-        // ============================
-        // MAIN WRAPPER (CENTER)
-        // ============================
         JPanel wrapper = new JPanel(new GridBagLayout());
         wrapper.setOpaque(false);
 
-        // ============================
-        // CONTENT PANEL (ROUNDED PANEL)
-        // ============================
         JPanel content = Theme.createRoundedPanel(30);
         content.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
         content.setBorder(new EmptyBorder(45, 70, 45, 70));
 
-        // ============================
-        // ICON
-        // ============================
         JLabel iconLabel = new JLabel("⏳");
         iconLabel.setFont(new Font("SansSerif", Font.PLAIN, 80));
         iconLabel.setForeground(Theme.BTN_COLOR);
         iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // ============================
-        // TITLE
-        // ============================
         JLabel titleLabel = new JLabel("COOLDOWN AKTIF");
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 32));
         titleLabel.setForeground(Theme.BTN_COLOR);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // ============================
-        // INFO TEXT
-        // ============================
         infoLabel = new JLabel("Kamu baru saja menyelesaikan permainan");
         infoLabel.setFont(Theme.FONT_NORMAL);
         infoLabel.setForeground(Theme.FG_TEXT);
@@ -67,9 +52,6 @@ public class CooldownPanel extends JPanel {
         infoLabel2.setForeground(Theme.FG_TEXT);
         infoLabel2.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // ============================
-        // TIMER
-        // ============================
         JLabel timerText = new JLabel("Waktu tersisa:");
         timerText.setFont(new Font("SansSerif", Font.BOLD, 16));
         timerText.setForeground(Theme.FG_TEXT);
@@ -80,9 +62,6 @@ public class CooldownPanel extends JPanel {
         cooldownTimerLabel.setForeground(Theme.COLOR_PRESENT);
         cooldownTimerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // ============================
-        // BUTTON PANEL
-        // ============================
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         buttonPanel.setOpaque(false);
 
@@ -103,9 +82,6 @@ public class CooldownPanel extends JPanel {
         buttonPanel.add(btnView);
         buttonPanel.add(btnMenu);
 
-        // ============================
-        // ADD COMPONENTS
-        // ============================
         content.add(iconLabel);
         content.add(Box.createRigidArea(new Dimension(0, 15)));
         content.add(titleLabel);
@@ -143,9 +119,6 @@ public class CooldownPanel extends JPanel {
         });
     }
 
-    // ============================
-    // TIMER LOGIC
-    // ============================
     public void onPanelShown(long gameEndTime) {
         System.out.println("CooldownPanel");
         this.lastGameEndTime = gameEndTime;

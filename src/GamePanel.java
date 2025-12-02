@@ -5,27 +5,23 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.util.*;
-import java.text.SimpleDateFormat;
 
 public class GamePanel extends JPanel {
     
     private Main mainApp;
     
-    // Komponen UI
     private JLabel timerLabel;
     private JTextField[][] gridFields;
     private JButton[] letterButtons = new JButton[26]; 
     private JButton btnEnter;
     private JButton btnBack;
     
-    // Panel utama game
     private JPanel gameContentPanel;
     
-    // Variabel Game
     private final int MAX_ATTEMPTS = 6;
     private final int WORD_LENGTH = 5;
     private final int GAME_DURATION = 120; 
-    private final long COOLDOWN_DURATION = 5 * 60 * 1000; // 5 menit dalam milliseconds
+    private final long COOLDOWN_DURATION = 5 * 60 * 1000;
     
     private String targetWord;
     private int targetWordId;
@@ -38,7 +34,6 @@ public class GamePanel extends JPanel {
     
     private StringBuilder currentGuess;
 
-    // Variabel untuk musik
     private Clip musicClip;
 
     public GamePanel(Main mainApp) {
@@ -72,7 +67,6 @@ public class GamePanel extends JPanel {
         gameContentPanel = new JPanel(new BorderLayout());
         gameContentPanel.setBackground(Theme.BG_COLOR);
         
-        // --- 1. HEADER ---
         JPanel headerPanel = new JPanel(new BorderLayout());
         headerPanel.setBackground(Theme.BG_COLOR);
         headerPanel.setBorder(new EmptyBorder(15, 20, 15, 20));
@@ -96,7 +90,6 @@ public class GamePanel extends JPanel {
         
         gameContentPanel.add(headerPanel, BorderLayout.NORTH);
 
-        // --- 2. GRID KATA ---
         JPanel centerContainer = new JPanel(new FlowLayout(FlowLayout.CENTER));
         centerContainer.setBackground(Theme.BG_COLOR);
         
@@ -123,7 +116,6 @@ public class GamePanel extends JPanel {
         centerContainer.add(gridPanel);
         gameContentPanel.add(centerContainer, BorderLayout.CENTER);
 
-        // --- 3. VIRTUAL KEYBOARD ---
         JPanel keyboardPanel = new JPanel();
         keyboardPanel.setLayout(new BoxLayout(keyboardPanel, BoxLayout.Y_AXIS));
         keyboardPanel.setBackground(Theme.BG_COLOR);
@@ -185,10 +177,8 @@ public class GamePanel extends JPanel {
     }
 
     public void onPanelShown() {
-        // Stop game yang sedang berjalan jika ada
         stopCurrentGame();
         
-        // Cek apakah player dalam cooldown
         DBCon db = new DBCon();
         long lastGameTime = db.getLastGameTime(mainApp.getCurrentUserId());
         
@@ -196,8 +186,6 @@ public class GamePanel extends JPanel {
             long timeSinceLastGame = System.currentTimeMillis() - lastGameTime;
             
             if (timeSinceLastGame < COOLDOWN_DURATION) {
-                // Masih dalam cooldown, redirect ke EndGamePanel
-                // Gunakan invokeLater untuk memastikan panel switch terjadi setelah UI siap
                 final long gameTime = lastGameTime;
                 SwingUtilities.invokeLater(() -> {
                     mainApp.showEndGamePanel(gameTime);
@@ -206,29 +194,26 @@ public class GamePanel extends JPanel {
             }
         }
         
-        // Tidak dalam cooldown, mulai game baru
         resetGame();
         startTimerThread(); 
-        playMusic(); // Mulai musik saat game dimulai
+        playMusic();
         
-        // Request focus setelah semua setup selesai
         SwingUtilities.invokeLater(() -> {
             this.requestFocusInWindow();
         });
     }
     
-    // Method helper untuk stop game yang sedang berjalan
     private void stopCurrentGame() {
         isGameActive = false;
         if (gameThread != null && gameThread.isAlive()) {
             gameThread.interrupt();
             try {
-                gameThread.join(500); // Wait max 500ms
+                gameThread.join(500); 
             } catch (InterruptedException e) {
-                // Ignore
+
             }
         }
-        stopMusic(); // Stop musik jika ada game yang dihentikan
+        stopMusic();
     }
     
     private void resetGame() {
@@ -251,7 +236,6 @@ public class GamePanel extends JPanel {
         
         System.out.println("Debug - Target Word: " + targetWord + " (ID: " + targetWordId + ")");
 
-        // Reset Grid
         for (int i = 0; i < MAX_ATTEMPTS; i++) {
             for (int j = 0; j < WORD_LENGTH; j++) {
                 gridFields[i][j].setText("");
@@ -260,7 +244,6 @@ public class GamePanel extends JPanel {
             }
         }
 
-        // Reset Keyboard
         for (int i = 0; i < 26; i++) {
             if (letterButtons[i] != null) {
                 letterButtons[i].setBackground(Theme.COLOR_ABSENT);
@@ -312,16 +295,6 @@ public class GamePanel extends JPanel {
         char[] guessChars = guess.toCharArray();
         boolean[] isUsed = new boolean[WORD_LENGTH]; 
 
-        // Cek HIJAU
-        for (int i = 0; i < WORD_LENGTH; i++) {
-            if (guessChars[i] == targetChars[i]) {
-                resultColors[i] = Theme.COLOR_CORRECT;
-                isUsed[i] = true;
-                updateKeyColor(String.valueOf(guessChars[i]), Theme.COLOR_CORRECT);
-            }
-        }
-
-        // Cek KUNING
         for (int i = 0; i < WORD_LENGTH; i++) {
             if (resultColors[i] == null) { 
                 boolean found = false;
@@ -339,9 +312,13 @@ public class GamePanel extends JPanel {
                     updateKeyColor(String.valueOf(guessChars[i]), Theme.COLOR_DEFAULT); 
                 }
             }
+            if (guessChars[i] == targetChars[i]) {
+                resultColors[i] = Theme.COLOR_CORRECT;
+                isUsed[i] = true;
+                updateKeyColor(String.valueOf(guessChars[i]), Theme.COLOR_CORRECT);
+            }
         }
 
-        // Update Grid UI
         for (int i = 0; i < WORD_LENGTH; i++) {
             gridFields[currentAttempt][i].setBackground(resultColors[i]);
             gridFields[currentAttempt][i].setBorder(BorderFactory.createLineBorder(resultColors[i], 2));
@@ -459,7 +436,7 @@ public class GamePanel extends JPanel {
         if (gameThread != null) {
             gameThread.interrupt(); 
         }
-        stopMusic(); // Stop musik saat game selesai
+        stopMusic(); 
 
         int score = 0;
         int actualAttempts = currentAttempt + (isWin ? 1 : 0);
@@ -489,7 +466,6 @@ public class GamePanel extends JPanel {
             System.err.println("Gagal menyimpan hasil game ke database!");
         }
         
-        // Redirect ke CooldownPanel dengan timestamp dari DB (yang baru disimpan)
         long lastGameTime = db.getLastGameTime(playerId);
         mainApp.showCooldownPanel(lastGameTime);
     }
@@ -499,7 +475,7 @@ public class GamePanel extends JPanel {
         if (gameThread != null) {
             gameThread.interrupt();
         }
-        stopMusic(); // Stop musik saat kembali ke menu
+        stopMusic();
         mainApp.showPanel("MAIN_MENU");
     }
 }

@@ -27,40 +27,22 @@ public class EndGamePanel extends JPanel {
     }
 
     private void initUI() {
-        // ==========================
-        // CARD WRAPPER
-        // ==========================
         JPanel card = Theme.createRoundedPanel(25);
         card.setOpaque(false);
         card.setBorder(new EmptyBorder(40, 60, 40, 60));
         card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
 
-        // ==========================
-        // TITLE
-        // ==========================
         JLabel titleLabel = new JLabel("🎮 HASIL GAME TERAKHIR 🎮");
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 28));
         titleLabel.setForeground(Theme.BTN_COLOR);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // ==========================
-        // STATUS BOX
-        // ==========================
         statusPanel = Theme.createRoundedPanel(20);
         statusPanel.setLayout(new BoxLayout(statusPanel, BoxLayout.Y_AXIS));
         statusPanel.setBorder(new EmptyBorder(22, 28, 22, 28));
         statusPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
         statusPanel.setMaximumSize(new Dimension(420, 270));
 
-        // JLabel statusTitle = new JLabel("Status:");
-        // statusTitle.setFont(new Font("SansSerif", Font.BOLD, 20));
-        // statusTitle.setForeground(Theme.FG_TEXT);
-        // statusTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        // statusPanel.add(statusTitle);
-        // statusPanel.add(Box.createVerticalStrut(14));
-
-        // placeholder – real data will replace these
         addStatusLine("Status", "-");
         addStatusLine("Kata", "-");
         addStatusLine("Percobaan", "-");
@@ -86,9 +68,6 @@ public class EndGamePanel extends JPanel {
         cooldownTimerLabel.setForeground(Theme.COLOR_PRESENT);
         cooldownTimerLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // ==========================
-        // BUTTON
-        // ==========================
         JButton btnBack = new JButton("MENU UTAMA");
         Theme.styleButton(btnBack);
         btnBack.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -98,9 +77,6 @@ public class EndGamePanel extends JPanel {
             mainApp.showPanel("MAIN_MENU");
         });
 
-        // ==========================
-        // ADD TO CARD
-        // ==========================
         card.add(titleLabel);
         card.add(Box.createVerticalStrut(30));
         card.add(statusPanel);
@@ -114,9 +90,6 @@ public class EndGamePanel extends JPanel {
         add(card);
     }
 
-    // ==================================================================
-    // UTIL — Membuat satu baris status (Label kiri & nilai kanan)
-    // ==================================================================
     private void addStatusLine(String label, String value) {
         JPanel row = new JPanel(new BorderLayout());
         row.setOpaque(false);
@@ -137,9 +110,6 @@ public class EndGamePanel extends JPanel {
         statusPanel.add(Box.createVerticalStrut(10));
     }
 
-    // ==================================================================
-    // LOAD DATA TERAKHIR
-    // ==================================================================
     public void onPanelShown(long gameEndTime) {
         System.out.println("EndGamePanel");
         this.lastGameEndTime = gameEndTime == 0 ? System.currentTimeMillis() : gameEndTime;
@@ -191,9 +161,6 @@ public class EndGamePanel extends JPanel {
         }
     }
 
-    // ==================================================================
-    // COOLDOWN TIMER
-    // ==================================================================
     private void startCooldownTimer() {
         stopCooldown();
         isRunning = true;
