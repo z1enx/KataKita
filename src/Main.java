@@ -10,8 +10,8 @@ public class Main extends JFrame {
     private MainMenuPanel mainMenuPanel = new MainMenuPanel(this);
     private GamePanel gamePanel = new GamePanel(this);
     private LeaderboardPanel leaderboardPanel = new LeaderboardPanel(this);
-    private EndGamePanel endGamePanel = new EndGamePanel(this);
-    private CooldownPanel cooldownPanel = new CooldownPanel(this);
+    private CooldownPanel endGamePanel = new CooldownPanel(this);
+    private EndGamePanel cooldownPanel = new EndGamePanel(this);
     
     private int currentUserId;
     private String currentUsername;
