@@ -437,20 +437,18 @@ public class GamePanel extends JPanel {
             gameThread.interrupt(); 
         }
         stopMusic(); 
-
-        int score = 0;
+        
+        int calculatedScore = 0; 
         int actualAttempts = currentAttempt + (isWin ? 1 : 0);
+        int gameDuration = GAME_DURATION - remainingTime;
         
         if (isWin) {
             int attemptsLeft = MAX_ATTEMPTS - currentAttempt; 
-            score = (remainingTime * 10) + (attemptsLeft * 50);
+            calculatedScore = (remainingTime * 10) + (attemptsLeft * 50);
         }
 
-        int playerId = mainApp.getCurrentUserId();
-        int gameDuration = GAME_DURATION - remainingTime;
-
         String msg = isWin ? 
-            "🎉 SELAMAT! Kamu Menang! 🎉\n\nSkor: " + score + "\nWaktu: " + gameDuration + " detik\nPercobaan: " + actualAttempts + " kali" : 
+            "🎉 SELAMAT! Kamu Menang! 🎉\n\nSkor: " + calculatedScore + "\nWaktu: " + gameDuration + " detik\nPercobaan: " + actualAttempts + " kali" : 
             "😢 YAHHH KALAH!\n\nJawaban: " + targetWord + "\nWaktu bermain: " + gameDuration + " detik\nPercobaan: " + actualAttempts + " kali";
         
         JOptionPane.showMessageDialog(this, 
@@ -458,16 +456,41 @@ public class GamePanel extends JPanel {
             isWin ? "KAMU MENANG!" : "GAME OVER", 
             isWin ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
 
-        DBCon db = new DBCon();
+        final int scoreToSave = calculatedScore; 
+        int playerId = mainApp.getCurrentUserId();
+
+        SwingWorker<Long, Void> worker = new SwingWorker<>() {
+            
+            @Override
+            protected Long doInBackground() throws Exception {
+                DBCon db = new DBCon();
+                
+                boolean saved = db.saveResult(playerId, targetWordId, gameDuration, actualAttempts, scoreToSave);
+                
+                if (!saved) {
+                    System.err.println("Gagal menyimpan data!");
+                    return 0L;
+                }
+
+                return db.getLastGameTime(playerId);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    long lastGameTime = get(); 
+                    if (lastGameTime > 0) {
+                        mainApp.showCooldownPanel(lastGameTime);
+                    } else {
+                        mainApp.showCooldownPanel(System.currentTimeMillis());
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        };
         
-        boolean saved = db.saveResult(playerId, targetWordId, gameDuration, actualAttempts, score);
-        
-        if (!saved) {
-            System.err.println("Gagal menyimpan hasil game ke database!");
-        }
-        
-        long lastGameTime = db.getLastGameTime(playerId);
-        mainApp.showCooldownPanel(lastGameTime);
+        worker.execute();
     }
 
     private void stopGameAndReturn() {

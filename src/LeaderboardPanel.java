@@ -16,7 +16,7 @@ public class LeaderboardPanel extends JPanel {
         this.setLayout(new BorderLayout(0, 20));
         this.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        JLabel titleLabel = new JLabel("🏆 PERINGKAT TERTINGGI 🏆");
+        JLabel titleLabel = new JLabel(" PERINGKAT TERTINGGI ");
         titleLabel.setFont(Theme.FONT_TITLE);
         titleLabel.setForeground(Theme.BTN_COLOR);
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -32,6 +32,7 @@ public class LeaderboardPanel extends JPanel {
         };
 
         leaderboardTable = new JTable(modelTable);
+        leaderboardTable.setBackground(Theme.BG_COLOR);
         leaderboardTable.setRowHeight(35);
         leaderboardTable.setFont(Theme.FONT_NORMAL);
         leaderboardTable.setGridColor(Theme.COLOR_BORDER);
@@ -107,7 +108,7 @@ public class LeaderboardPanel extends JPanel {
         southPanel.add(backButton);
         this.add(southPanel, BorderLayout.SOUTH);
     }
-
+        
     public void onPanelShown() {
         SwingWorker<List<Object[]>, Void> worker = new SwingWorker<List<Object[]>, Void>() {
             
