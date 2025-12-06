@@ -10,8 +10,8 @@ public class Main extends JFrame {
     private MainMenuPanel mainMenuPanel = new MainMenuPanel(this);
     private GamePanel gamePanel = new GamePanel(this);
     private LeaderboardPanel leaderboardPanel = new LeaderboardPanel(this);
-    private CooldownPanel endGamePanel = new CooldownPanel(this);
-    private EndGamePanel cooldownPanel = new EndGamePanel(this);
+    private CooldownPanel cooldownPanel = new CooldownPanel(this);
+    private EndGamePanel endGamePanel = new EndGamePanel(this);
     
     private int currentUserId;
     private String currentUsername;
@@ -24,7 +24,7 @@ public class Main extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         DBCon db = new DBCon();
-        db.initialize();
+        // db.initialize();
 
         cardLayout = new CardLayout();
         mainPanelContainer = new JPanel(cardLayout);
@@ -38,8 +38,8 @@ public class Main extends JFrame {
         mainPanelContainer.add(mainMenuPanel, "MAIN_MENU");
         mainPanelContainer.add(gamePanel, "GAME");
         mainPanelContainer.add(leaderboardPanel, "LEADERBOARD");
-        mainPanelContainer.add(endGamePanel, "ENDGAME");
-        mainPanelContainer.add(cooldownPanel, "COOLDOWN");
+        mainPanelContainer.add(cooldownPanel, "ENDGAME");
+        mainPanelContainer.add(endGamePanel, "COOLDOWN");
 
         add(mainPanelContainer);
 
@@ -59,14 +59,14 @@ public class Main extends JFrame {
         cardLayout.show(mainPanelContainer, panelName);
     }
     
-    public void showEndGamePanel(long gameEndTime) {
+    public void showCooldownPanel(long gameEndTime) {
         cardLayout.show(mainPanelContainer, "ENDGAME");
-        endGamePanel.onPanelShown(gameEndTime);
+        cooldownPanel.onPanelShown(gameEndTime);
     }
     
-    public void showCooldownPanel(long gameEndTime) {
+    public void showEndGamePanel(long gameEndTime) {
         cardLayout.show(mainPanelContainer, "COOLDOWN");
-        cooldownPanel.onPanelShown(gameEndTime);
+        endGamePanel.onPanelShown(gameEndTime);
     }
 
     public void onLoginSuccess(int userId, String username) {

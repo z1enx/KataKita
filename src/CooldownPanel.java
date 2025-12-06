@@ -69,7 +69,7 @@ public class CooldownPanel extends JPanel {
         styleButton(btnView, Theme.COLOR_PRESENT);
         btnView.addActionListener(e -> {
             stopCooldown();
-            mainApp.showCooldownPanel(lastGameEndTime);
+            mainApp.showEndGamePanel(lastGameEndTime);
         });
 
         JButton btnMenu = new JButton("🏠 KEMBALI KE MENU");

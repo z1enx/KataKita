@@ -188,7 +188,7 @@ public class GamePanel extends JPanel {
             if (timeSinceLastGame < COOLDOWN_DURATION) {
                 final long gameTime = lastGameTime;
                 SwingUtilities.invokeLater(() -> {
-                    mainApp.showEndGamePanel(gameTime);
+                    mainApp.showCooldownPanel(gameTime);
                 });
                 return;
             }
@@ -480,9 +480,9 @@ public class GamePanel extends JPanel {
                 try {
                     long lastGameTime = get(); 
                     if (lastGameTime > 0) {
-                        mainApp.showCooldownPanel(lastGameTime);
+                        mainApp.showEndGamePanel(lastGameTime);
                     } else {
-                        mainApp.showCooldownPanel(System.currentTimeMillis());
+                        mainApp.showEndGamePanel(System.currentTimeMillis());
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

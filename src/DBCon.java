@@ -22,29 +22,29 @@ public class DBCon {
         }
     }
 
-    public void initialize() {
-        String checkWord = "SELECT COUNT(*) FROM word";
-        String insertWord = "INSERT INTO word (word_text) VALUES " +
-                            "('MAKAN'), ('MANDI'), ('KABAR'), ('PILOT'), ('TULIS')," +
-                            "('JURUS'), ('TUJUH'), ('HUJAN'), ('SANDI'), ('TIDUR')," +
-                            "('TIDAK'), ('SEMUA'), ('AUDIO'), ('ANTAR'), ('BELUM')";
+    // public void initialize() {
+    //     String checkWord = "SELECT COUNT(*) FROM word";
+    //     String insertWord = "INSERT INTO word (word_text) VALUES " +
+    //                         "('MAKAN'), ('MANDI'), ('KABAR'), ('PILOT'), ('TULIS')," +
+    //                         "('JURUS'), ('TUJUH'), ('HUJAN'), ('SANDI'), ('TIDUR')," +
+    //                         "('TIDAK'), ('SEMUA'), ('AUDIO'), ('ANTAR'), ('BELUM')";
 
-        try (Connection con = getConnection();
-            Statement st = con.createStatement()) {
+    //     try (Connection con = getConnection();
+    //         Statement st = con.createStatement()) {
 
-            try (ResultSet rs = st.executeQuery(checkWord)) {
-                if (rs.next()) {
-                    int count = rs.getInt(1);
-                    if (count == 0) {
-                        st.executeUpdate(insertWord);
-                    }
-                }
-            }
+    //         try (ResultSet rs = st.executeQuery(checkWord)) {
+    //             if (rs.next()) {
+    //                 int count = rs.getInt(1);
+    //                 if (count == 0) {
+    //                     st.executeUpdate(insertWord);
+    //                 }
+    //             }
+    //         }
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
+    //     } catch (SQLException e) {
+    //         e.printStackTrace();
+    //     }
+    // }
 
     public boolean registerPlayer(String username, String password) {
         if (username == null || username.isBlank() || password == null || password.isBlank()) {
@@ -116,7 +116,7 @@ public class DBCon {
 
     public Map<String, Integer> getSoal() {
         Map<String, Integer> wordMap = new HashMap<>();
-        String sql = "SELECT word_id, word_text FROM word WHERE is_active = 1";
+        String sql = "SELECT word_id, word_text FROM word ORDER BY RAND()";
         
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql);
