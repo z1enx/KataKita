@@ -116,7 +116,8 @@ public class DBCon {
 
     public Map<String, Integer> getSoal() {
         Map<String, Integer> wordMap = new HashMap<>();
-        String sql = "SELECT word_id, word_text FROM word ORDER BY RAND()";
+        String sql = "SELECT word_id, word_text FROM word ORDER BY RAND() LIMIT 1";
+        // String sql = "SELECT word_id, word_text FROM word";
         
         try (Connection con = getConnection();
              PreparedStatement ps = con.prepareStatement(sql);
